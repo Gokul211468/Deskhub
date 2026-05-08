@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PROJECT_GUIDE.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<style>
+pre code .hljs-string, pre code .hljs-attr { color: #FFB86C !important; }
+pre code .hljs-number, pre code .hljs-literal { color: #FF79C6 !important; }
+pre code .hljs-keyword, pre code .hljs-built_in { color: #BD93F9 !important; }
+pre code .hljs-comment { color: #6272A4 !important; font-style: italic; }
+pre code .hljs-title.function_, pre code .hljs-built_in { color: #8BE9FD !important; }
+pre code { color: #F8F8F2 !important; }
+pre { background: #282A36 !important; }
+body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0D0D14; color: #F1F5F9; max-width: 920px; margin: auto; padding: 20px; line-height: 1.55; }
+h1 { color: #818CF8; border-bottom: 3px solid #6366F1; padding-bottom: 8px; }
+h2 { color: #818CF8; margin-top: 28px; border-left: 4px solid #6366F1; padding-left: 10px; }
+h3 { color: #F1F5F9; margin-top: 20px; }
+p, li, td, th { color: #E2E8F0; }
+code { background: #1E1E2E; padding: 2px 6px; border-radius: 3px; font-size: 0.92em; color: #A6E3A1; }
+pre { background: #12121A !important; color: #CDD6F4 !important; padding: 16px; border-radius: 6px; font-size: 0.95em; line-height: 1.55; border: 1px solid #2E2E42; overflow-x: auto; margin: 14px 0; }
+pre code { background: transparent; color: inherit; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; background: #16161F; }
+th { background: #6366F1; color: #FFFFFF; padding: 10px 12px; text-align: left; font-size: 0.9em; font-weight: 700; }
+td { padding: 10px 12px; border-bottom: 1px solid #2E2E42; font-size: 0.92em; color: #E2E8F0; vertical-align: top; }
+tr:nth-child(even) td { background: #1A1A26; }
+.cover { background: linear-gradient(135deg, #312E81 0%, #6366F1 100%); padding: 38px 30px; margin-bottom: 28px; border-radius: 6px; }
+.cover h1 { color: #FFFFFF; font-size: 2.4em; border: none; margin: 0; padding: 0; }
+.cover .sub { color: #C7D2FE; font-size: 1.05em; margin: 10px 0 14px; }
+.cover .end-badge { display: inline-block; background: #FBBF24; color: #0D0D14; padding: 4px 14px; border-radius: 3px; font-size: 0.72em; font-weight: 700; letter-spacing: 1.2px; margin-bottom: 18px; }
+.meta-cards { display: flex; gap: 14px; flex-wrap: wrap; }
+.meta-cards > div { background: rgba(255,255,255,0.12); padding: 10px 18px; border-radius: 4px; min-width: 100px; }
+.meta-cards strong { color: #FBBF24; font-size: 1.4em; display: block; }
+.meta-cards span { color: #E0E7FF; font-size: 0.72em; letter-spacing: 1px; }
+.part-banner { background: rgba(99,102,241,0.15); color: #818CF8; text-align: center; padding: 10px; border-radius: 4px; font-weight: 700; font-size: 0.9em; letter-spacing: 1px; margin: 25px 0 15px; border: 1px solid #6366F1; }
+.part-amber { background: rgba(251,191,36,0.15); color: #FBBF24; border-color: #FBBF24; }
+.part-mint { background: rgba(45,212,191,0.15); color: #2DD4BF; border-color: #2DD4BF; }
+.topic { background: #312E81; color: #FFFFFF; padding: 12px 16px; border-radius: 6px; margin: 24px 0 15px; font-weight: 700; }
+.topic .n { background: rgba(0,0,0,0.25); padding: 2px 8px; border-radius: 3px; margin-right: 8px; font-size: 0.85em; color: #E0E7FF; }
+.topic .sub { float: right; opacity: 0.85; font-weight: 400; font-size: 0.88em; }
+.card { background: #16161F; border: 1px solid #2E2E42; border-radius: 6px; padding: 14px 18px; margin: 12px 0; }
+.card.indigo { border-left: 4px solid #6366F1; }
+.card.amber { border-left: 4px solid #FBBF24; }
+.card.red { border-left: 4px solid #FF4D6D; }
+.phase-card { background: #16161F; padding: 16px 20px; margin: 14px 0; border-radius: 4px; border-left: 4px solid #6366F1; }
+.phase-card.p1 { border-left-color: #4D9FFF; }
+.phase-card.p2 { border-left-color: #2DD4BF; }
+.phase-card.p3 { border-left-color: #FBBF24; }
+.phase-card.p4 { border-left-color: #FF8C42; }
+.phase-card.p5 { border-left-color: #C084FC; }
+.phase-card .ph-title { font-weight: 700; margin-bottom: 8px; font-size: 1.05em; }
+.phase-card.p1 .ph-title { color: #4D9FFF; }
+.phase-card.p2 .ph-title { color: #2DD4BF; }
+.phase-card.p3 .ph-title { color: #FBBF24; }
+.phase-card.p4 .ph-title { color: #FF8C42; }
+.phase-card.p5 .ph-title { color: #C084FC; }
+.phase-card .ph-meta { color: #9CA3AF; font-size: 0.82em; margin-bottom: 10px; }
+.phase-card ul { margin: 6px 0; padding-left: 22px; }
+.phase-card li { color: #E2E8F0; margin: 4px 0; line-height: 1.5; }
+.tip-box { background: rgba(99,102,241,0.12); border: 1px solid #6366F1; color: #C7D2FE; padding: 12px 14px; border-radius: 3px; font-size: 0.92em; margin: 12px 0; }
+.warn-box { background: rgba(255,77,109,0.12); border: 1px solid #FF4D6D; color: #FCA5A5; padding: 12px 14px; border-radius: 3px; font-size: 0.92em; margin: 12px 0; }
+.rubric { background: #16161F; border: 1px solid #2E2E42; border-radius: 4px; padding: 4px; margin: 12px 0; }
+.rubric table { margin: 0; }
+hr { border: none; border-top: 1px solid #2E2E42; margin: 30px 0; }
+.tree { background: #12121A; border: 1px solid #2E2E42; border-radius: 4px; padding: 14px 18px; font-family: 'Courier New', monospace; font-size: 0.88em; color: #CDD6F4; line-height: 1.55; white-space: pre; overflow-x: auto; }
+</style>
+<div class="cover">
+<div class="end-badge">★ CAPSTONE PROJECT — END OF TRAINING</div>
+<h1>DeskHub — Support Ticket Dashboard</h1>
+<div class="sub">A vanilla-JS, ES-module, real-API capstone for the JavaScript training program</div>
+<div class="meta-cards">
+<div><strong>5 days</strong><span>SUGGESTED</span></div>
+<div><strong>Vanilla JS</strong><span>NO FRAMEWORK</span></div>
+<div><strong>ES Modules</strong><span>ARCHITECTURE</span></div>
+<div><strong>json-server</strong><span>FAKE BACKEND</span></div>
+</div>
+</div>
+<h2 id="why-this-project">Why this project</h2>
+<p>Service-based work for global clients is mostly internal tools, dashboards, and CRUD admin panels — list-detail views with search, filter, sort, pagination, and form-heavy create/edit screens against REST APIs. A todo list doesn't touch most of that surface. A support ticket dashboard does — and it's the same shape as the first ticket you'll be assigned in your first client project.</p>
+<p>By the end of this build you'll have produced a portfolio-grade, hireable artifact that exercises every concept from the 27-session program, from variables (Day 1) all the way to debounce and security (Day 27).</p>
+<div class="card indigo">
+<strong>The fictional brief:</strong> "DeskHub" is a support ticketing app for an Indian SaaS company. Customers from across India submit support tickets; agents triage, comment, and resolve them. Admins see everything. You're building the agent/admin web app.
+</div>
+<hr>
+<h2 id="tech-stack">Tech stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Tool</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend</td>
+<td><code>json-server</code> over <code>db.json</code></td>
+<td>Real REST endpoints, zero backend code</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td><code>fetch</code> + <code>async/await</code></td>
+<td>What every modern app uses</td>
+</tr>
+<tr>
+<td>Architecture</td>
+<td>ES modules (<code>import</code>/<code>export</code>)</td>
+<td>Day 12 + Day 24 callback</td>
+</tr>
+<tr>
+<td>State</td>
+<td>Plain JS objects + localStorage</td>
+<td>No Redux — yet</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Hand-written HTML + CSS</td>
+<td>Practice your fundamentals</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>None</td>
+<td>No bundler, no transpiler — just open the file</td>
+</tr>
+<tr>
+<td>Dev runtime</td>
+<td><code>live-server</code></td>
+<td>Auto-reload on save</td>
+</tr>
+</tbody>
+</table>
+<div class="tip-box">
+<strong>Why no framework?</strong> Frameworks hide the JavaScript. This project forces you to use the language directly — and once you understand it, picking up React in week one of your client project is easy.
+</div>
+<hr>
+<h2 id="setup">Setup</h2>
+<pre class="hljs"><code><div><span class="hljs-comment"># Clone the starter repo</span>
+git <span class="hljs-built_in">clone</span> &lt;repo-url&gt; deskhub
+<span class="hljs-built_in">cd</span> deskhub
+
+<span class="hljs-comment"># Install dev dependencies</span>
+npm install
+
+<span class="hljs-comment"># Run API + UI together</span>
+npm run dev
+</div></code></pre>
+<p>Two services start:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>URL</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>json-server</code></td>
+<td>http://localhost:3001</td>
+<td>Fake REST API</td>
+</tr>
+<tr>
+<td><code>live-server</code></td>
+<td>http://localhost:8080</td>
+<td>Static site, auto-reloads on save</td>
+</tr>
+</tbody>
+</table>
+<p>Open http://localhost:8080/ in your browser. (You'll need to create <code>public/index.html</code> first — see Phase 1.)</p>
+<hr>
+<h2 id="folder-structure">Folder structure</h2>
+<p>The starter gives you everything below except the <code>public/</code> folder. <strong>You build <code>public/</code> from scratch — every HTML and CSS file.</strong></p>
+<div class="tree">
+deskhub-starter/
+├── package.json          ← given
+├── db.json               ← given (5 users, 30 tickets, 20 comments)
+├── README.md             ← given (you'll edit it)
+├── PROJECT_GUIDE.md      ← given (this file)
+│
+├── public/               ← YOU build everything here
+│   ├── index.html        ← login page
+│   ├── dashboard.html
+│   ├── tickets.html
+│   ├── ticket-detail.html
+│   └── styles/main.css
+│
+└── src/                  ← stubs given — fill the TODOs
+    ├── main.js
+    ├── api/
+    │   ├── client.js     ← fetch wrapper
+    │   ├── tickets.js    ← ticket CRUD
+    │   └── auth.js       ← fake login
+    ├── modules/
+    │   ├── auth.js       ← login UI wiring
+    │   ├── tickets.js    ← list page logic
+    │   ├── ticketDetail.js
+    │   ├── form.js       ← validation
+    │   └── ui.js         ← toast / modal / loader
+    └── utils/
+        ├── debounce.js   ← Day 27 callback
+        ├── formatDate.js ← Intl APIs
+        └── storage.js    ← localStorage wrapper
+</div>
+<div class="card amber">
+<strong>Module loading note</strong> — In your HTML, load <code>main.js</code> with <code>&lt;script type="module" src="../src/main.js"&gt;&lt;/script&gt;</code>. ES modules require this attribute. Without it, you'll get "Cannot use import statement outside a module".
+</div>
+<hr>
+<h2 id="api-cheatsheet">API cheatsheet</h2>
+<p><code>json-server</code> gives you a full REST API. Combine query params freely.</p>
+<pre class="hljs"><code><div><span class="hljs-comment"># Tickets</span>
+GET    /tickets                              <span class="hljs-comment"># list all</span>
+GET    /tickets?status=open                  <span class="hljs-comment"># filter by exact match (any field)</span>
+GET    /tickets?status=open&amp;priority=urgent  <span class="hljs-comment"># combine filters</span>
+GET    /tickets?_sort=createdAt&amp;_order=desc  <span class="hljs-comment"># sort</span>
+GET    /tickets?_page=1&amp;_limit=10            <span class="hljs-comment"># paginate (also returns X-Total-Count header)</span>
+GET    /tickets?q=login                      <span class="hljs-comment"># full-text search across all fields</span>
+GET    /tickets/12                           <span class="hljs-comment"># single ticket</span>
+POST   /tickets                              <span class="hljs-comment"># create (auto-assigns id)</span>
+PATCH  /tickets/12                           <span class="hljs-comment"># partial update</span>
+DELETE /tickets/12                           <span class="hljs-comment"># delete</span>
+
+<span class="hljs-comment"># Comments (filter by ticket)</span>
+GET    /comments?ticketId=12&amp;_sort=createdAt&amp;_order=asc
+POST   /comments
+
+<span class="hljs-comment"># Users (for fake login)</span>
+GET    /users?email=priya@deskhub.in
+</div></code></pre>
+<div class="warn-box">
+<strong>X-Total-Count</strong> — When you paginate, json-server returns the total in the <code>X-Total-Count</code> response header. You need this for pagination UI ("Page 2 of 7"). Read it via <code>response.headers.get("X-Total-Count")</code>. <strong>Note:</strong> in your fetch wrapper, return both <code>data</code> AND headers, or pull it inline before calling <code>.json()</code>.
+</div>
+<hr>
+<div class="part-banner">PHASE PLAN — 5 PHASES</div>
+<div class="phase-card p1">
+<div class="ph-title">Phase 1 — Foundations &amp; Login</div>
+<div class="ph-meta">Goal: get the dev loop running, build the login flow end-to-end</div>
+<ul>
+<li>Run <code>npm run dev</code>, confirm both services are up</li>
+<li>Create <code>public/index.html</code> (login page) — semantic form, basic CSS</li>
+<li>Implement <code>utils/storage.js</code> — get / set / remove / clear with prefix</li>
+<li>Implement <code>api/client.js</code> — request, get, post, patch, del</li>
+<li>Implement <code>api/auth.js</code> — login, logout, getCurrentUser, isAuthenticated</li>
+<li>Implement <code>modules/auth.js</code> — wire up the form, redirect on success</li>
+<li>On wrong creds: show inline error, button stays enabled</li>
+<li>On success: store token + user, navigate to <code>dashboard.html</code></li>
+</ul>
+<strong>Done when:</strong> you can log in with <code>priya@deskhub.in / demo123</code> and reach a (placeholder) dashboard. Reload — still logged in.
+</div>
+<div class="phase-card p2">
+<div class="ph-title">Phase 2 — Tickets List + API Client</div>
+<div class="ph-meta">Goal: build the main page — fetch and render all tickets</div>
+<ul>
+<li>Create <code>public/tickets.html</code> with a table or card grid placeholder</li>
+<li>Implement <code>api/tickets.js</code> — listTickets, getTicket, createTicket, updateTicket, deleteTicket, listComments, addComment</li>
+<li>Implement <code>modules/tickets.js</code> — initTicketsList, refresh, renderTable</li>
+<li>Implement <code>utils/formatDate.js</code> — formatDate, formatDateTime, formatRelative</li>
+<li>Show loading spinner while fetching (use ui.js stub later, or a placeholder div for now)</li>
+<li>Display: ID, title, customer, priority, status, assignee name, created date</li>
+<li>Empty state: "No tickets found" message</li>
+<li>Error state: friendly message + retry button</li>
+</ul>
+<strong>Done when:</strong> tickets.html shows all 30 tickets in a clean table with proper formatting and loading/error states.
+</div>
+<div class="phase-card p3">
+<div class="ph-title">Phase 3 — Search, Filter, Sort, Paginate</div>
+<div class="ph-meta">Goal: make the list usable at scale</div>
+<ul>
+<li>Add search input — debounced 300ms (use <code>utils/debounce.js</code>)</li>
+<li>Add status / priority / assignee dropdowns — populate dynamically from <code>/users</code></li>
+<li>Add sort dropdown — by createdAt, priority, status</li>
+<li>Add pagination — prev / next + page numbers, 10 per page</li>
+<li>Read <code>X-Total-Count</code> header to compute total pages</li>
+<li>Reset page to 1 whenever a filter changes</li>
+<li><em>Stretch:</em> reflect filters in URL query string so refresh keeps state</li>
+</ul>
+<strong>Done when:</strong> you can search for "login", filter to status=open, sort by priority, paginate, and the table updates correctly. No double-fetches on rapid typing (debounce works).
+</div>
+<div class="phase-card p4">
+<div class="ph-title">Phase 4 — Detail View + Create Form</div>
+<div class="ph-meta">Goal: full CRUD with proper form validation</div>
+<ul>
+<li>Create <code>public/ticket-detail.html</code> — read <code>?id=N</code> from URL</li>
+<li>Implement <code>modules/ticketDetail.js</code> — load ticket + comments in parallel</li>
+<li>Add status / priority / assignee dropdowns that PATCH on change</li>
+<li>Build the create-ticket modal (use <code>modules/ui.js</code>)</li>
+<li>Implement <code>modules/form.js</code> — validators + validateField + validateForm</li>
+<li>Validation rules:
+<ul>
+<li>title: required, 5–100 chars</li>
+<li>description: required, min 10 chars</li>
+<li>customerName: required</li>
+<li>customerEmail: required + email format</li>
+<li>priority: required, oneOf valid values</li>
+<li>category: required, oneOf valid values</li>
+</ul>
+</li>
+<li>Inline errors on blur, re-validate on submit, disabled submit when invalid</li>
+<li>On submit: POST, close modal, refresh list, show toast</li>
+</ul>
+<strong>Done when:</strong> you can click any ticket → see details → change status → see toast → reload page → status persisted. New tickets can be created with full validation.
+</div>
+<div class="phase-card p5">
+<div class="ph-title">Phase 5 — Comments, Polish, README</div>
+<div class="ph-meta">Goal: ship a polished artifact</div>
+<ul>
+<li>Add comments thread on detail page — list existing, add new</li>
+<li>Implement <code>modules/ui.js</code> properly — toast (auto-dismiss 3s), modal (Esc/click-outside), confirmDialog</li>
+<li>Delete ticket button — confirmDialog, then DELETE, then redirect</li>
+<li>Add the dashboard page with 4 stat cards + recent 5 tickets</li>
+<li>Polish CSS — consistent spacing, decent typography, responsive at 768px+</li>
+<li>Empty states everywhere they apply</li>
+<li>Update <code>README.md</code> — your own setup notes, screenshots, architecture decisions, known limitations, what you'd add next</li>
+<li>Final check: log in, create ticket, edit, comment, delete — full flow with no errors</li>
+</ul>
+<strong>Done when:</strong> you'd be happy to put this on your CV. README is a real document, not the template.
+</div>
+<hr>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<p>A finished submission must have:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>npm run dev</code> works on a fresh clone — no manual setup steps</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Login + logout work; session survives page reload</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tickets list shows real data with at least 5 columns</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Search input is debounced (no fetch on every keystroke)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>At least 3 working filters (status, priority, assignee)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Pagination shows total pages and current page</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Create-ticket form has inline validation; bad input is rejected</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Detail view loads ticket + comments in one render (parallel fetch)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Status / priority / assignee changes persist (PATCH works)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Comments can be added and appear immediately</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Loading and error states are handled visibly on every page</td>
+</tr>
+<tr>
+<td>12</td>
+<td>All <code>fetch</code> calls are wrapped in try/catch — no unhandled promise rejections</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Code organised into ES modules — no single 500-line file</td>
+</tr>
+<tr>
+<td>14</td>
+<td>README explains setup, architecture, decisions, and known issues</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="evaluation-rubric">Evaluation rubric</h2>
+<div class="rubric">
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Weight</th>
+<th>What we look for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Functionality</td>
+<td>30%</td>
+<td>All 14 acceptance criteria pass</td>
+</tr>
+<tr>
+<td>Code organisation</td>
+<td>20%</td>
+<td>ES modules used; clear separation api ↔ modules ↔ utils; no copy-paste</td>
+</tr>
+<tr>
+<td>Async + error handling</td>
+<td>15%</td>
+<td>try/catch everywhere; loading states visible; user-friendly errors</td>
+</tr>
+<tr>
+<td>Form validation</td>
+<td>10%</td>
+<td>Inline UX; both blur and submit validation; sensible messages</td>
+</tr>
+<tr>
+<td>UI quality</td>
+<td>10%</td>
+<td>Looks professional, responsive, accessible-ish (labels, focus states)</td>
+</tr>
+<tr>
+<td>README + git hygiene</td>
+<td>10%</td>
+<td>Clear setup; meaningful commits; explains decisions</td>
+</tr>
+<tr>
+<td>Stretch goals</td>
+<td>5%</td>
+<td>Beyond the spec — see next section</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>A 15-minute walkthrough call accompanies the rubric. Each dev demos and is asked one or two &quot;why did you do it this way&quot; questions per area. That conversation matters as much as the score.</p>
+<hr>
+<h2 id="stretch-goals">Stretch goals</h2>
+<p>Tackle ANY of these to push from &quot;good submission&quot; to &quot;standout&quot;:</p>
+<table>
+<thead>
+<tr>
+<th>Stretch</th>
+<th>Difficulty</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>URL-driven filters — <code>?status=open&amp;page=2</code> reflects in URL, refresh-safe</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Optimistic status updates — UI changes instantly, rolls back on API failure</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Keyboard shortcuts — <code>/</code> focus search, <code>n</code> new ticket, <code>j</code>/<code>k</code> next/prev row</td>
+<td>Easy</td>
+</tr>
+<tr>
+<td>Dark mode toggle — persisted in localStorage</td>
+<td>Easy</td>
+</tr>
+<tr>
+<td>Bulk actions — select multiple tickets, change status in one go</td>
+<td>Hard</td>
+</tr>
+<tr>
+<td>CSV export of current filtered list</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Activity log on detail page — timeline of all changes</td>
+<td>Hard</td>
+</tr>
+<tr>
+<td>Real-time poll — auto-refresh list every 30s, indicate new tickets</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Accessibility audit — passes WAVE / axe with zero errors</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Toast queue — show multiple toasts stacked, dismiss in order</td>
+<td>Easy</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="submission">Submission</h2>
+<ol>
+<li>Push your repo to GitHub. Public, with a real README.</li>
+<li>Tag a release: <code>v1.0.0</code> with a short release-note describing what shipped vs. what's pending.</li>
+<li>Send the trainer:
+<ul>
+<li>GitHub URL</li>
+<li>One screenshot of the tickets list page</li>
+<li>One paragraph: <em>&quot;What was hardest, what would I do differently next time?&quot;</em></li>
+</ul>
+</li>
+<li>Be ready for the 15-minute walkthrough call.</li>
+</ol>
+<hr>
+<div class="part-banner part-amber">PROGRAM RECAP — WHERE EVERYTHING SHOWS UP</div>
+<p>Each part of this project exercises specific days from the 27-session program. If something feels rough, revisit that day's cheatsheet.</p>
+<table>
+<thead>
+<tr>
+<th>Project area</th>
+<th>Days exercised</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Variables, types, operators, template literals</td>
+<td>Days 1–3</td>
+</tr>
+<tr>
+<td>Conditionals, loops</td>
+<td>Days 4–5</td>
+</tr>
+<tr>
+<td>Functions, callbacks</td>
+<td>Day 6</td>
+</tr>
+<tr>
+<td>Arrays — <code>.map</code>, <code>.filter</code>, <code>.find</code>, <code>.reduce</code></td>
+<td>Day 7</td>
+</tr>
+<tr>
+<td>Objects — destructuring, spread</td>
+<td>Day 8</td>
+</tr>
+<tr>
+<td>ES6+ — modules, default params, optional chaining</td>
+<td>Day 9, 12</td>
+</tr>
+<tr>
+<td>DOM manipulation</td>
+<td>Day 10</td>
+</tr>
+<tr>
+<td>Events, delegation</td>
+<td>Day 11</td>
+</tr>
+<tr>
+<td>try/catch around <code>await</code></td>
+<td>Day 12, 19</td>
+</tr>
+<tr>
+<td>Closures (debounce, factory)</td>
+<td>Day 14</td>
+</tr>
+<tr>
+<td><code>this</code> in event handlers / methods</td>
+<td>Day 15</td>
+</tr>
+<tr>
+<td>Classes (optional — for ui.js modal)</td>
+<td>Day 17</td>
+</tr>
+<tr>
+<td><code>fetch</code>, async/await, error handling</td>
+<td>Days 18–19</td>
+</tr>
+<tr>
+<td>Event loop intuition (loading state during fetch)</td>
+<td>Day 20</td>
+</tr>
+<tr>
+<td>ES modules architecture</td>
+<td>Day 24</td>
+</tr>
+<tr>
+<td>Pure functions, immutability (filter/sort logic)</td>
+<td>Day 25</td>
+</tr>
+<tr>
+<td>Module / observer / factory patterns</td>
+<td>Day 26</td>
+</tr>
+<tr>
+<td>Debounce, security (textContent vs innerHTML), perf</td>
+<td>Day 27</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<div class="card indigo">
+<strong>One last note.</strong> The point of this project isn't to ship something perfect. It's to make every concept from the training stick by building real software. Lean on the cheatsheets, ask each other questions, and write code you'd be proud to walk a senior engineer through.
+<br><br>
+Build something you'd be happy to show in an interview. Then go ace your first client project.
+</div>
+
+</body>
+</html>
