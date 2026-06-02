@@ -42,7 +42,25 @@ export async function request(path, options = {}) {
       ...customHeaders
     }
 
-    
+    if(!skipAuth){
+      const token = getStored('token');
+      if(token){
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    const config = {
+      method: method.toUpperCase(),
+      headers,
+      ...otherOptions
+    };
+
+    if(body && method.toUpperCase() !== 'GET'){
+      config.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, config);
+    await handleResponse(response, path, method);
   } catch (error) {
     
   }
