@@ -1,6 +1,6 @@
 # DeskHub — Capstone Project
 
-A vanilla-JS support ticket dashboard. Build it after completing the 27-session JavaScript training.
+A vanilla- JS support ticket dashboard. Build it after completing the 27-session JavaScript training.
 
 > **For the full project specification, read [PROJECT_GUIDE.md](./PROJECT_GUIDE.md).**
 > **For the day-by-day checklist (Days 28–32), read [DAILY_TASKS.md](./DAILY_TASKS.md).**
