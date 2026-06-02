@@ -32,7 +32,20 @@ import { get as getStored } from "../utils/storage.js";
 const BASE_URL = "http://localhost:3001";
 
 export async function request(path, options = {}) {
-  // TODO: implement
+  try {
+    const {method = 'GET', body, headers: customHeaders = {}, skipAuth = false, ...otherOptions } = options;
+
+    const url = BASE_URL + path;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...customHeaders
+    }
+
+    
+  } catch (error) {
+    
+  }
   throw new Error("api/client.js: request() not implemented yet");
 }
 
