@@ -19,7 +19,7 @@
 
 import { initLogin, initLogout } from "./modules/auth.js";
 // import { initDashboard } from "./modules/dashboard.js";
-// import { initTicketsList } from "./modules/tickets.js";
+import { initTicketsList } from "./modules/tickets.js";
 // import { initTicketDetail } from "./modules/ticketDetail.js";
 
 console.log("DeskHub booting…");
@@ -57,6 +57,7 @@ console.log(`📄 Current page: ${page}`);
 switch (page) {
   case "login":         initLogin(); break;
   case "dashboard":     initDashboard(); break;
+  case "tickets":       initTicketsList(); break;
   case "tickets-list":  initTicketsList(); break;
   case "ticket-detail": initTicketDetail(); break;
   default: console.warn("Unknown page:", page);

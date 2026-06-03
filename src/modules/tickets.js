@@ -52,10 +52,9 @@
 //   items: [], total: 0, loading: false,
 // };
 
-// export async function initTicketsList() {
-//   requireAuth();
-//   // TODO
-// }
+export async function initTicketsList() {
+  console.log("Tickets page initialized");
+}
 
 // async function refresh() { /* TODO */ }
 // function renderTable(items) { /* TODO */ }
