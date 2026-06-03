@@ -3,10 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>DeskHub - Dashboard</title>
+    <link rel="stylesheet" href="styles/main.css">
 </head>
-<body>
-    <h1>You are in</h1>
-    <button>Log Out</button>
+<body data-page="dashboard">
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1>DeskHub</h1>
+            <button id="logout-btn" class="btn-secondary">Logout</button>
+        </header>
+
+        <main class="dashboard-main">
+            <div class="welcome-section">
+                <h2>You're in! 🎉</h2>
+                <p id="user-welcome">Welcome back!</p>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>
