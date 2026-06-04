@@ -29,7 +29,7 @@
 
 import { get as getStored } from "../utils/storage.js";
 
-const BASE_URL = "http://localhost:3001";
+const BASE_URL = "https://deskhub-2i51.onrender.com";
 
 export async function request(path, options = {}) {
   try {
