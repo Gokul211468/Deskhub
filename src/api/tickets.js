@@ -51,38 +51,46 @@
 import { get, post, patch, del, getWithTotal } from "./client.js";
 
 
-function buildTicketsPath(opts = {}) {
+export function buildQueryString(state = {}) {
   const params = new URLSearchParams();
 
-  const {
-    status,
-    priority,
-    assignee,
-    search,
-    sort = "createdAt",
-    order = "desc",
-    page,
-    limit,
-  } = opts;
-
+  const status =
+    typeof state.status === "string" ? state.status.trim() : state.status;
   if (status) params.set("status", status);
+
+  const priority =
+    typeof state.priority === "string"
+      ? state.priority.trim()
+      : state.priority;
   if (priority) params.set("priority", priority);
+
+  const assignee = state.assignee;
   if (assignee !== undefined && assignee !== null && assignee !== "") {
     params.set("assignedTo", String(assignee));
   }
-  if (search && String(search).trim()) {
-    params.set("q", String(search).trim());
-  }
 
+  const rawSearch = state.search;
+  const q =
+    rawSearch == null ? "" : String(rawSearch).trim();
+  if (q) params.set("q", q);
+
+  const sort = state.sort ?? state.sortBy ?? "createdAt";
+  const order = state.order ?? "desc";
   if (sort) params.set("_sort", sort);
   if (order) params.set("_order", order);
 
+  const { page, limit } = state;
   if (page != null) params.set("_page", String(page));
   if (limit != null) params.set("_limit", String(limit));
 
-  const qs = params.toString();
+  return params.toString();
+}
+
+function buildTicketsPath(state = {}) {
+  const qs = buildQueryString(state);
   return qs ? `/tickets?${qs}` : "/tickets";
 }
+
 
 
 export async function listTickets(opts = {}) {

@@ -98,18 +98,56 @@ function setTicketsErrorMessage(err) {
     : msg || "Something went wrong loading tickets.";
 }
 
-function syncStateFromDom() {
-  const searchInput = document.getElementById("search-input");
-  const statusEl = document.getElementById("filter-status");
-  const priorityEl = document.getElementById("filter-priority");
-  const assigneeEl = document.getElementById("filter-assignee");
-  const sortEl = document.getElementById("sort-by");
+function readFiltersFromUrl() {
+  const sp = new URLSearchParams(window.location.search);
 
-  if (searchInput) state.search = searchInput.value.trim();
-  if (statusEl) state.status = statusEl.value;
-  if (priorityEl) state.priority = priorityEl.value;
-  if (assigneeEl) state.assignee = assigneeEl.value;
-  if (sortEl) state.sortBy = sortEl.value;
+  const q = sp.get("q");
+  if (q != null) state.search = q.trim();
+
+  const st = sp.get("status");
+  if (st != null) state.status = st;
+
+  const pr = sp.get("priority");
+  if (pr != null) state.priority = pr;
+
+  const as = sp.get("assignee");
+  if (as != null) state.assignee = as;
+
+  const so = sp.get("sort");
+  if (so != null) state.sortBy = so;
+
+  const pg = sp.get("page");
+  if (pg != null) {
+    const n = Number.parseInt(pg, 10);
+    if (Number.isFinite(n) && n >= 1) state.page = n;
+  }
+}
+
+function applyStateToDom(searchInput, statusEl, priorityEl, assigneeEl, sortEl) {
+  searchInput.value = state.search;
+  statusEl.value = state.status;
+  priorityEl.value = state.priority;
+  const sortOk = [...sortEl.options].some((o) => o.value === state.sortBy);
+  if (!sortOk) state.sortBy = "createdAt";
+  sortEl.value = state.sortBy;
+  assigneeEl.value = state.assignee;
+}
+
+function syncUrlFromState() {
+  const params = new URLSearchParams();
+
+  if (state.search) params.set("q", state.search);
+  if (state.status) params.set("status", state.status);
+  if (state.priority) params.set("priority", state.priority);
+  if (state.assignee) params.set("assignee", state.assignee);
+  if (state.sortBy && state.sortBy !== "createdAt") params.set("sort", state.sortBy);
+  if (state.page > 1) params.set("page", String(state.page));
+
+  const qs = params.toString();
+  const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  if (next !== `${window.location.pathname}${window.location.search}`) {
+    history.replaceState(null, "", next);
+  }
 }
 
 async function loadAssigneeOptions() {
@@ -200,6 +238,151 @@ export function renderTable(items) {
   tbody.appendChild(frag);
 }
 
+function getTotalPages() {
+  return Math.max(1, Math.ceil(state.total / state.limit));
+}
+
+/** Build page indices to show: compact when many pages. */
+function getVisiblePageNumbers(current, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  const pages = new Set([1, totalPages, current, current - 1, current + 1]);
+  for (const p of [...pages]) {
+    if (p < 1 || p > totalPages) pages.delete(p);
+  }
+  const sorted = [...pages].sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i];
+    if (i > 0 && p - sorted[i - 1] > 1) out.push(null); // null = ellipsis gap
+    out.push(p);
+  }
+  return out;
+}
+
+export function renderPagination() {
+  const nav = document.getElementById("pagination");
+  if (!nav) return;
+
+  nav.replaceChildren();
+
+  if (state.total === 0) return;
+
+  const totalPages = getTotalPages();
+  if (state.page > totalPages) state.page = totalPages;
+  if (state.page < 1) state.page = 1;
+
+  const start = (state.page - 1) * state.limit + 1;
+  const end = Math.min(state.page * state.limit, state.total);
+
+  const prev = document.createElement("button");
+  prev.type = "button";
+  prev.className = "pagination-btn pagination-prev";
+  prev.textContent = "Prev";
+  prev.disabled = state.page <= 1;
+  prev.setAttribute("aria-label", "Previous page");
+
+  const pagesWrap = document.createElement("div");
+  pagesWrap.className = "pagination-pages";
+
+  const nums = getVisiblePageNumbers(state.page, totalPages);
+  let prevNum = null;
+  for (const n of nums) {
+    if (n === null) continue;
+    if (prevNum !== null && n - prevNum > 1) {
+      const ell = document.createElement("span");
+      ell.className = "pagination-ellipsis";
+      ell.textContent = "…";
+      ell.setAttribute("aria-hidden", "true");
+      pagesWrap.appendChild(ell);
+    }
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pagination-btn pagination-page";
+    if (n === state.page) {
+      btn.classList.add("is-current");
+      btn.setAttribute("aria-current", "page");
+    }
+    btn.textContent = String(n);
+    btn.dataset.page = String(n);
+    btn.setAttribute("aria-label", `Page ${n}`);
+    pagesWrap.appendChild(btn);
+    prevNum = n;
+  }
+
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "pagination-btn pagination-next";
+  next.textContent = "Next";
+  next.disabled = state.page >= totalPages;
+  next.setAttribute("aria-label", "Next page");
+
+  const summary = document.createElement("span");
+  summary.className = "pagination-summary";
+  summary.textContent = `Showing ${start}–${end} of ${state.total}`;
+
+  nav.append(prev, pagesWrap, next, summary);
+}
+
+function wirePaginationOnce() {
+  const nav = document.getElementById("pagination");
+  if (!nav || nav.dataset.wired === "1") return;
+  nav.dataset.wired = "1";
+
+  nav.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const btn = t.closest("button.pagination-btn");
+    if (!btn || btn.disabled) return;
+
+    if (btn.classList.contains("pagination-prev")) {
+      state.page -= 1;
+      refresh();
+      return;
+    }
+    if (btn.classList.contains("pagination-next")) {
+      state.page += 1;
+      refresh();
+      return;
+    }
+    if (btn.classList.contains("pagination-page") && btn.dataset.page) {
+      const p = Number(btn.dataset.page);
+      if (!Number.isNaN(p) && p >= 1) {
+        state.page = p;
+        refresh();
+      }
+    }
+  });
+}
+
+let ticketsPopstateWired = false;
+
+/** Browser back/forward: re-read query string, sync form, reload list. */
+function wirePopstateOnce() {
+  if (ticketsPopstateWired) return;
+  ticketsPopstateWired = true;
+
+  window.addEventListener("popstate", () => {
+    void (async () => {
+      readFiltersFromUrl();
+      const si = document.getElementById("search-input");
+      const st = document.getElementById("filter-status");
+      const pr = document.getElementById("filter-priority");
+      const as = document.getElementById("filter-assignee");
+      const so = document.getElementById("sort-by");
+      if (!si || !st || !pr || !as || !so) return;
+
+      applyStateToDom(si, st, pr, as, so);
+      try {
+        await loadAssigneeOptions();
+      } catch {
+        /* assignee list failed; still try to refresh tickets */
+      }
+      await refresh();
+    })();
+  });
+}
 
 export async function refresh() {
   const loadingEl = document.getElementById("loading");
@@ -217,36 +400,24 @@ export async function refresh() {
   if (table) table.setAttribute("aria-busy", "true");
 
   try {
-    const assigneeParam =
-      state.assignee === "" ? undefined : state.assignee;
-
-    const { items, total } = await listTickets({
-      status: state.status || undefined,
-      priority: state.priority || undefined,
-      assignee: assigneeParam,
-      search: state.search || undefined,
-      sort: state.sortBy,
-      order: state.order,
-      page: state.page,
-      limit: state.limit,
-    });
+    const { items, total } = await listTickets(state);
 
     state.items = Array.isArray(items) ? items : [];
     state.total = typeof total === "number" ? total : state.items.length;
+
+    const totalPages = Math.max(1, Math.ceil(state.total / state.limit));
+    if (state.total > 0 && state.page > totalPages) {
+      state.page = totalPages;
+      await refresh();
+      return;
+    }
 
     renderTable(state.items);
 
     if (emptyEl) emptyEl.hidden = state.items.length > 0;
 
-    if (pagEl) {
-      if (state.total === 0) {
-        pagEl.textContent = "";
-      } else {
-        const start = (state.page - 1) * state.limit + 1;
-        const end = Math.min(state.page * state.limit, state.total);
-        pagEl.textContent = `Showing ${start}–${end} of ${state.total}`;
-      }
-    }
+    renderPagination();
+    syncUrlFromState();
   } catch (err) {
       console.error(err);
       setTicketsErrorMessage(err);
@@ -255,14 +426,13 @@ export async function refresh() {
       state.total = 0;
       renderTable([]);
       if (emptyEl) emptyEl.hidden = true; /* don't show "no tickets" when the API failed */
-      if (pagEl) pagEl.textContent = "";
+      if (pagEl) pagEl.replaceChildren();
   } finally {
       if (loadingEl) loadingEl.hidden = true;
       if (table) table.removeAttribute("aria-busy");
       if (ticketsSection) ticketsSection.classList.remove("is-loading");
   }
 }
-
 
 async function loadUsersOnce() {
   if (usersCache) return usersCache;
@@ -296,6 +466,9 @@ export async function initTicketsList() {
     return;
   }
 
+  readFiltersFromUrl();
+  applyStateToDom(searchInput, statusEl, priorityEl, assigneeEl, sortEl);
+
   const errorRetry = document.getElementById("error-retry");
   if (errorRetry) {
     errorRetry.addEventListener("click", () => {
@@ -303,16 +476,16 @@ export async function initTicketsList() {
     });
   }
 
-  syncStateFromDom();
+  wirePaginationOnce();
+  wirePopstateOnce();
 
+  const debouncedRefresh = debounce(refresh, 300);
 
-  const onSearch = debounce(() => {
+  searchInput.addEventListener("input", () => {
     state.search = searchInput.value.trim();
     state.page = 1;
-    refresh();
-  }, 300);
-
-  searchInput.addEventListener("input", onSearch);
+    debouncedRefresh();
+  });
 
   statusEl.addEventListener("change", () => {
     state.status = statusEl.value;
@@ -337,6 +510,7 @@ export async function initTicketsList() {
     state.page = 1;
     refresh();
   });
+
 
   try {
     await loadAssigneeOptions();

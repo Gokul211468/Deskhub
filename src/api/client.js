@@ -141,10 +141,6 @@ async function parseResponseBody(response) {
   return await response.text();
 }
 
-/**
- * GET JSON and read X-Total-Count (json-server pagination).
- * Use this instead of get() when you need the full collection size.
- */
 
 
 export async function getWithTotal(path, options = {}) {
@@ -163,11 +159,15 @@ export async function getWithTotal(path, options = {}) {
     const response = await fetch(url, { method: "GET", headers });
     await handleResponse(response, path, "GET");
 
-    const items = await parseResponseBody(response);
+    // Read total count from headers before consuming the body (.json()).
     const raw = response.headers.get("X-Total-Count");
+    const headerTotal =
+      raw != null && raw !== "" ? Number(raw) : null;
+
+    const items = await parseResponseBody(response);
     const total =
-      raw != null && raw !== ""
-        ? Number(raw)
+      headerTotal != null && Number.isFinite(headerTotal)
+        ? headerTotal
         : Array.isArray(items)
           ? items.length
           : 0;
