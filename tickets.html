@@ -6,8 +6,7 @@
     <title>DeskHub - Tickets</title>
     <link rel="stylesheet" href="styles/main.css">
 </head>
-<body data-page="tickets">
-    
+<body data-page="tickets-list">
     <header class="dashboard-header">
         <h1>DeskHub - Tickets</h1>
         <nav class="header-nav">
@@ -73,13 +72,17 @@
         </section>
 
         
-        <div id="loading" class="loading-state" hidden>
-            <p>Loading tickets...</p>
+        <div id="loading" class="loading-state" hidden role="status" aria-live="polite">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p class="loading-text">Loading tickets…</p>
         </div>
 
         
-        <div id="error" class="error-state" hidden>
-            <p>Failed to load tickets. Please try again.</p>
+        <div id="error" class="error-state" hidden role="alert">
+            <div class="error-state-inner">
+                <p id="error-text" class="error-text">Failed to load tickets.</p>
+                <button type="button" id="error-retry" class="btn-secondary">Retry</button>
+            </div>
         </div>
 
         <section class="tickets-section">
@@ -88,12 +91,11 @@
                     <tr>
                         <th scope="col">ID</th>
                         <th scope="col">Title</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Priority</th>
                         <th scope="col">Customer</th>
+                        <th scope="col">Priority</th>
+                        <th scope="col">Status</th>
                         <th scope="col">Assignee</th>
                         <th scope="col">Created</th>
-                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="tickets-tbody">
@@ -102,7 +104,7 @@
             </table>
 
             
-            <div id="empty-state" class="empty-state" hidden>
+            <div id="empty-state" class="empty-state" hidden role="status" aria-live="polite">
                 <h3>No tickets found</h3>
                 <p>Try adjusting your search or filter criteria.</p>
             </div>

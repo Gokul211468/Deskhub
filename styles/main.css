@@ -271,6 +271,34 @@
   .login-error:empty {
     display: none;
   }
+
+  /* ===== TICKETS / API ERROR ===== */
+.error-state {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--danger-light);
+  border: 1px solid var(--danger-light);
+  border-left: 4px solid var(--danger);
+  border-radius: var(--border-radius);
+  color: var(--gray-800);
+}
+
+.error-state[hidden] {
+  display: none;
+}
+
+.error-state-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.error-text {
+  margin: 0;
+  flex: 1 1 12rem;
+}
   
   /* ===== SUCCESS MESSAGES ===== */
   .success-message {
@@ -309,6 +337,158 @@
     margin: 0 auto;
   }
   
+  /* ===== TICKETS LOADING ===== */
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    color: var(--gray-700);
+    font-weight: 500;
+  }
+  .loading-state[hidden] {
+    display: none;
+  }
+  .loading-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary-600);
+    border-radius: 50%;
+    animation: loading-spin 0.7s linear infinite;
+  }
+  .loading-text {
+    margin: 0;
+  }
+
+  /* Optional: soften table while data is loading */
+  .tickets-section.is-loading {
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+    /* ===== TICKETS TABLE ===== */
+    .tickets-main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--spacing-lg);
+    }
+  
+    .tickets-section {
+      margin-top: var(--spacing-md);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+  
+    .tickets-table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--gray-800);
+    }
+  
+    .tickets-table thead {
+      background: var(--gray-100);
+      border-bottom: 2px solid var(--gray-200);
+    }
+  
+    .tickets-table th {
+      padding: var(--spacing-sm) var(--spacing-md);
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--gray-600);
+      white-space: nowrap;
+    }
+  
+    .tickets-table td {
+      padding: var(--spacing-md);
+      vertical-align: middle;
+      border-bottom: 1px solid var(--gray-200);
+    }
+  
+    .tickets-table tbody tr {
+      background: white;
+      transition: background-color 0.12s ease;
+    }
+  
+    .tickets-table tbody tr:nth-child(even) {
+      background: var(--gray-50);
+    }
+  
+    .tickets-table tbody tr:hover {
+      background: var(--primary-50);
+    }
+  
+    .tickets-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+  
+    .tickets-table td:first-child {
+      font-variant-numeric: tabular-nums;
+      color: var(--gray-600);
+      width: 4rem;
+    }
+  
+    .tickets-table td a {
+      color: var(--primary-700);
+      font-weight: 500;
+      text-decoration: none;
+    }
+  
+    .tickets-table td a:hover {
+      text-decoration: underline;
+      color: var(--primary-800);
+    }
+  
+    .tickets-table td a:focus-visible {
+      outline: 2px solid var(--primary-500);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    
+  /* ===== TICKETS EMPTY STATE ===== */
+.empty-state {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-xl);
+  text-align: center;
+  background: var(--gray-100);
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--border-radius-lg);
+  color: var(--gray-700);
+}
+
+.empty-state[hidden] {
+  display: none;
+}
+
+.empty-state h3 {
+  margin: 0 0 var(--spacing-sm);
+  font-size: 1.125rem;
+  color: var(--gray-900);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
   /* ===== UTILITY CLASSES ===== */
   .hidden {
     display: none !important;
@@ -339,6 +519,12 @@
   .mb-lg { margin-bottom: var(--spacing-lg); }
   
   /* ===== ANIMATIONS ===== */
+  @keyframes loading-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   @keyframes slideIn {
     from {
       opacity: 0;

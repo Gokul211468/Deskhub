@@ -52,11 +52,299 @@
 //   items: [], total: 0, loading: false,
 // };
 
-export async function initTicketsList() {
-  console.log("Tickets page initialized");
-}
+
 
 // async function refresh() { /* TODO */ }
 // function renderTable(items) { /* TODO */ }
 // function renderPagination(total, page, limit) { /* TODO */ }
 // function openCreateModal() { /* TODO */ }
+
+
+
+import { listTickets } from "../api/tickets.js";
+import { get } from "../api/client.js";
+import { debounce } from "../utils/debounce.js";
+import { requireAuth, initLogout } from "./auth.js";
+import { formatDate } from "../utils/formatDate.js";
+
+const state = {
+  search: "",
+  status: "",
+  priority: "",
+  assignee: "",
+  sortBy: "createdAt",
+  order: "desc",
+  page: 1,
+  limit: 10,
+  items: [],
+  total: 0,
+};
+
+let usersCache = null;
+let usersLoadPromise = null;
+let userMap = new Map();
+
+function setTicketsErrorMessage(err) {
+  const el = document.getElementById("error-text");
+  if (!el) return;
+
+  const msg = err?.message ?? "";
+  const isNetwork =
+    err?.name === "NetworkError" ||
+    /network error|failed to fetch|load failed/i.test(msg);
+
+  el.textContent = isNetwork
+    ? "Cannot reach the API. Make sure json-server is running (npm run dev or npm run api on port 3001), then retry."
+    : msg || "Something went wrong loading tickets.";
+}
+
+function syncStateFromDom() {
+  const searchInput = document.getElementById("search-input");
+  const statusEl = document.getElementById("filter-status");
+  const priorityEl = document.getElementById("filter-priority");
+  const assigneeEl = document.getElementById("filter-assignee");
+  const sortEl = document.getElementById("sort-by");
+
+  if (searchInput) state.search = searchInput.value.trim();
+  if (statusEl) state.status = statusEl.value;
+  if (priorityEl) state.priority = priorityEl.value;
+  if (assigneeEl) state.assignee = assigneeEl.value;
+  if (sortEl) state.sortBy = sortEl.value;
+}
+
+async function loadAssigneeOptions() {
+  const select = document.getElementById("filter-assignee");
+  if (!select) return;
+
+  const users = await loadUsersOnce();
+
+  const current = state.assignee;
+  select.replaceChildren();
+
+  const allOpt = document.createElement("option");
+  allOpt.value = "";
+  allOpt.textContent = "All Assignees";
+  select.appendChild(allOpt);
+
+  for (const u of users) {
+    const opt = document.createElement("option");
+    opt.value = String(u.id);
+    opt.textContent = u.name;
+    select.appendChild(opt);
+  }
+
+  if (current && [...select.options].some((o) => o.value === current)) {
+    select.value = current;
+  } else {
+    select.value = "";
+    state.assignee = "";
+  }
+}
+
+
+export function renderTable(items) {
+  const tbody = document.getElementById("tickets-tbody");
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  for (const ticket of items) {
+    const tr = document.createElement("tr");
+  
+    const tdId = document.createElement("td");
+    tdId.textContent = String(ticket.id ?? "");
+  
+    const tdTitle = document.createElement("td");
+    const titleLink = document.createElement("a");
+    titleLink.href = `ticket-detail.html?id=${encodeURIComponent(ticket.id)}`;
+    titleLink.textContent = ticket.title ?? "";
+    tdTitle.appendChild(titleLink);
+  
+    const tdCustomer = document.createElement("td");
+    tdCustomer.textContent = ticket.customerName ?? "";
+  
+    const tdPriority = document.createElement("td");
+    tdPriority.textContent = ticket.priority ?? "";
+  
+    const tdStatus = document.createElement("td");
+    tdStatus.textContent = ticket.status ?? "";
+  
+    const tdAssignee = document.createElement("td");
+    const aid = ticket.assignedTo;
+    tdAssignee.textContent =
+      aid == null ? "—" : userMap.get(aid) ?? `#${aid}`;
+  
+    const tdCreated = document.createElement("td");
+    tdCreated.textContent = ticket.createdAt
+      ? formatDate(ticket.createdAt)
+      : "";
+  
+    tr.append(
+      tdId,
+      tdTitle,
+      tdCustomer,
+      tdPriority,
+      tdStatus,
+      tdAssignee,
+      tdCreated
+    );
+    frag.appendChild(tr);
+  }
+
+  tbody.appendChild(frag);
+}
+
+
+export async function refresh() {
+  const loadingEl = document.getElementById("loading");
+  const errorEl = document.getElementById("error");
+  const emptyEl = document.getElementById("empty-state");
+  const table = document.getElementById("tickets-table");
+  const pagEl = document.getElementById("pagination");
+  const ticketsSection = document.querySelector(".tickets-section");
+
+  if (emptyEl) emptyEl.hidden = true;
+  if (loadingEl) loadingEl.hidden = false;
+  if (errorEl) errorEl.hidden = true;
+  if (ticketsSection) ticketsSection.classList.add("is-loading");
+
+  if (table) table.setAttribute("aria-busy", "true");
+
+  try {
+    const assigneeParam =
+      state.assignee === "" ? undefined : state.assignee;
+
+    const { items, total } = await listTickets({
+      status: state.status || undefined,
+      priority: state.priority || undefined,
+      assignee: assigneeParam,
+      search: state.search || undefined,
+      sort: state.sortBy,
+      order: state.order,
+      page: state.page,
+      limit: state.limit,
+    });
+
+    state.items = Array.isArray(items) ? items : [];
+    state.total = typeof total === "number" ? total : state.items.length;
+
+    renderTable(state.items);
+
+    if (emptyEl) emptyEl.hidden = state.items.length > 0;
+
+    if (pagEl) {
+      if (state.total === 0) {
+        pagEl.textContent = "";
+      } else {
+        const start = (state.page - 1) * state.limit + 1;
+        const end = Math.min(state.page * state.limit, state.total);
+        pagEl.textContent = `Showing ${start}–${end} of ${state.total}`;
+      }
+    }
+  } catch (err) {
+      console.error(err);
+      setTicketsErrorMessage(err);
+      if (errorEl) errorEl.hidden = false;
+      state.items = [];
+      state.total = 0;
+      renderTable([]);
+      if (emptyEl) emptyEl.hidden = true; /* don't show "no tickets" when the API failed */
+      if (pagEl) pagEl.textContent = "";
+  } finally {
+      if (loadingEl) loadingEl.hidden = true;
+      if (table) table.removeAttribute("aria-busy");
+      if (ticketsSection) ticketsSection.classList.remove("is-loading");
+  }
+}
+
+
+async function loadUsersOnce() {
+  if (usersCache) return usersCache;
+  if (!usersLoadPromise) {
+    usersLoadPromise = get("/users")
+      .then((users) => {
+        usersCache = users;
+        userMap = new Map(users.map((u) => [u.id, u.name]));
+        return users;
+      })
+      .finally(() => {
+        usersLoadPromise = null;
+      });
+  }
+  return usersLoadPromise;
+}
+
+export async function initTicketsList() {
+  if (!requireAuth()) return;
+
+  initLogout("#logout-btn");
+
+  const searchInput = document.getElementById("search-input");
+  const statusEl = document.getElementById("filter-status");
+  const priorityEl = document.getElementById("filter-priority");
+  const assigneeEl = document.getElementById("filter-assignee");
+  const sortEl = document.getElementById("sort-by");
+
+  if (!searchInput || !statusEl || !priorityEl || !assigneeEl || !sortEl) {
+    console.error("tickets.js: required DOM nodes missing");
+    return;
+  }
+
+  const errorRetry = document.getElementById("error-retry");
+  if (errorRetry) {
+    errorRetry.addEventListener("click", () => {
+      refresh();
+    });
+  }
+
+  syncStateFromDom();
+
+
+  const onSearch = debounce(() => {
+    state.search = searchInput.value.trim();
+    state.page = 1;
+    refresh();
+  }, 300);
+
+  searchInput.addEventListener("input", onSearch);
+
+  statusEl.addEventListener("change", () => {
+    state.status = statusEl.value;
+    state.page = 1;
+    refresh();
+  });
+
+  priorityEl.addEventListener("change", () => {
+    state.priority = priorityEl.value;
+    state.page = 1;
+    refresh();
+  });
+
+  assigneeEl.addEventListener("change", () => {
+    state.assignee = assigneeEl.value;
+    state.page = 1;
+    refresh();
+  });
+
+  sortEl.addEventListener("change", () => {
+    state.sortBy = sortEl.value;
+    state.page = 1;
+    refresh();
+  });
+
+  try {
+    await loadAssigneeOptions();
+  } catch (e) {
+    console.error(e);
+    setTicketsErrorMessage(e);
+    document.getElementById("error")?.removeAttribute("hidden");
+    return; /* don't refresh tickets until users load, or clear cache and retry */
+  }
+  await refresh();
+}

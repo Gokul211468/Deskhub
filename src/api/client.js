@@ -141,6 +141,55 @@ async function parseResponseBody(response) {
   return await response.text();
 }
 
+/**
+ * GET JSON and read X-Total-Count (json-server pagination).
+ * Use this instead of get() when you need the full collection size.
+ */
+
+
+export async function getWithTotal(path, options = {}) {
+  const { skipAuth = false, headers: customHeaders = {} } = options;
+  try {
+    const url = BASE_URL + path;
+    const headers = {
+      "Content-Type": "application/json",
+      ...customHeaders,
+    };
+    if (!skipAuth) {
+      const token = getStored("token");
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { method: "GET", headers });
+    await handleResponse(response, path, "GET");
+
+    const items = await parseResponseBody(response);
+    const raw = response.headers.get("X-Total-Count");
+    const total =
+      raw != null && raw !== ""
+        ? Number(raw)
+        : Array.isArray(items)
+          ? items.length
+          : 0;
+
+    return { items, total };
+  } catch (error) {
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
+      const networkError = new Error(
+        "Network error: Please check your internet connection or ensure the API server is running at " +
+          BASE_URL
+      );
+      networkError.name = "NetworkError";
+      networkError.original = error;
+      throw networkError;
+    }
+    throw error;
+  }
+}
+
+
+
+
 // TODO: shorthand exports
 // export const get   = (path)         => request(path);
 // export const post  = (path, body)   => request(path, { method: "POST",   body });
@@ -153,9 +202,12 @@ export const get = (path, options = {}) =>{
   return request(path, {method: 'GET', ...options});
 };
 
-export const post = (path, body, options = {}) =>{
-  return request(path, body, {method: 'POST', ...options});
-};
+// export const post = (path, body, options = {}) =>{
+//   return request(path, body, {method: 'POST', ...options});
+// };
+
+export const post = (path, body, options = {}) =>
+  request(path, { method: "POST", body, ...options });
 
 export const patch = (path, body, options = {}) => {
   return request(path, { method: 'PATCH', body, ...options });

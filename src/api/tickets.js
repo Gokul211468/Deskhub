@@ -30,7 +30,7 @@
  *   [ ] addComment({ ticketId, authorId, content })
  */
 
-// import { get, post, patch, del } from "./client.js";
+
 
 // export async function listTickets(opts = {}) {
 //   // TODO
@@ -42,3 +42,102 @@
 // export async function deleteTicket(id) { /* TODO */ }
 // export async function listComments(ticketId) { /* TODO */ }
 // export async function addComment(comment) { /* TODO */ }
+
+
+/**
+ * api/tickets.js — Ticket API calls (json-server)
+ */
+
+import { get, post, patch, del, getWithTotal } from "./client.js";
+
+
+function buildTicketsPath(opts = {}) {
+  const params = new URLSearchParams();
+
+  const {
+    status,
+    priority,
+    assignee,
+    search,
+    sort = "createdAt",
+    order = "desc",
+    page,
+    limit,
+  } = opts;
+
+  if (status) params.set("status", status);
+  if (priority) params.set("priority", priority);
+  if (assignee !== undefined && assignee !== null && assignee !== "") {
+    params.set("assignedTo", String(assignee));
+  }
+  if (search && String(search).trim()) {
+    params.set("q", String(search).trim());
+  }
+
+  if (sort) params.set("_sort", sort);
+  if (order) params.set("_order", order);
+
+  if (page != null) params.set("_page", String(page));
+  if (limit != null) params.set("_limit", String(limit));
+
+  const qs = params.toString();
+  return qs ? `/tickets?${qs}` : "/tickets";
+}
+
+
+export async function listTickets(opts = {}) {
+  const path = buildTicketsPath(opts);
+  const paginated =
+    opts.page != null && opts.limit != null && opts.page > 0 && opts.limit > 0;
+
+  if (paginated) {
+    return getWithTotal(path);
+  }
+
+  const items = await get(path);
+  const total = Array.isArray(items) ? items.length : 0;
+  return { items, total };
+}
+
+export async function getTicket(id) {
+  return get(`/tickets/${encodeURIComponent(id)}`);
+}
+
+
+export async function createTicket(data) {
+  const now = new Date().toISOString();
+  const body = {
+    ...data,
+    createdAt: now,
+    updatedAt: now,
+  };
+  return post("/tickets", body);
+}
+
+
+export async function updateTicket(id, patch) {
+  const body = {
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  return patch(`/tickets/${encodeURIComponent(id)}`, body);
+}
+
+
+export async function deleteTicket(id) {
+  return del(`/tickets/${encodeURIComponent(id)}`);
+}
+
+
+export async function listComments(ticketId) {
+  return get(`/comments?ticketId=${encodeURIComponent(ticketId)}`);
+}
+
+
+export async function addComment(comment) {
+  const body = {
+    ...comment,
+    createdAt: new Date().toISOString(),
+  };
+  return post("/comments", body);
+}

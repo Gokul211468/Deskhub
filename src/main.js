@@ -17,10 +17,10 @@
  *   [ ] Redirect to /login.html if no token (except on login page itself)
  */
 
-import { initLogin, initLogout } from "./modules/auth.js";
-// import { initDashboard } from "./modules/dashboard.js";
+import { initLogin, initLogout, requireAuth } from "./modules/auth.js";
 import { initTicketsList } from "./modules/tickets.js";
-// import { initTicketDetail } from "./modules/ticketDetail.js";
+//import { initTicketDetail } from "./modules/ticketDetail.js";
+
 
 console.log("DeskHub booting…");
 
@@ -50,15 +50,28 @@ function showUserWelcome() {
 }
 
 if (!page) {
-    console.error("No data-page attribute found on <body>. Add data-page='pagename' to your HTML.");
-  }
-console.log(`📄 Current page: ${page}`);
+  console.error("No data-page attribute found on <body>. Add data-page='pagename' to your HTML.");
+}
+console.log(` Current page: ${page}`);
 
-switch (page) {
-  case "login":         initLogin(); break;
-  case "dashboard":     initDashboard(); break;
-  case "tickets":       initTicketsList(); break;
-  case "tickets-list":  initTicketsList(); break;
-  case "ticket-detail": initTicketDetail(); break;
-  default: console.warn("Unknown page:", page);
+const protectedPages = new Set(["dashboard", "tickets-list", "ticket-detail"]);
+
+// Top-level `return` is invalid in ES modules; gate the switch instead.
+if (!(protectedPages.has(page) && !requireAuth())) {
+  switch (page) {
+    case "login":
+      initLogin();
+      break;
+    case "dashboard":
+      initDashboard();
+      break;
+    case "tickets-list":
+      initTicketsList();
+      break;
+    case "ticket-detail":
+      initTicketDetail();
+      break;
+    default:
+      console.warn("Unknown page:", page);
+  }
 }
