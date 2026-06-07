@@ -19,7 +19,7 @@
 
 import { initLogin, initLogout, requireAuth } from "./modules/auth.js";
 import { initTicketsList } from "./modules/tickets.js";
-//import { initTicketDetail } from "./modules/ticketDetail.js";
+import { initTicketDetail } from "./modules/ticketDetail.js";
 
 
 console.log("DeskHub booting…");

@@ -61,11 +61,22 @@
 
 
 
-import { listTickets } from "../api/tickets.js";
+import { listTickets, createTicket } from "../api/tickets.js";
 import { get } from "../api/client.js";
 import { debounce } from "../utils/debounce.js";
 import { requireAuth, initLogout } from "./auth.js";
 import { formatDate } from "../utils/formatDate.js";
+import { openModal, closeModal, showToast } from "./ui.js";
+import {
+  required,
+  minLength,
+  maxLength,
+  email,
+  oneOf,
+  validateForm,
+  validateField,
+  isFormSatisfiesRules,
+} from "./form.js";
 
 const state = {
   search: "",
@@ -439,15 +450,272 @@ async function loadUsersOnce() {
   if (!usersLoadPromise) {
     usersLoadPromise = get("/users")
       .then((users) => {
-        usersCache = users;
-        userMap = new Map(users.map((u) => [u.id, u.name]));
-        return users;
+        usersCache = Array.isArray(users) ? users : [];
+        userMap = new Map(usersCache.map((u) => [u.id, u.name]));
+        return usersCache;
       })
       .finally(() => {
         usersLoadPromise = null;
       });
   }
   return usersLoadPromise;
+}
+
+const NEW_TICKET_CATEGORIES = [
+  { value: "auth", label: "Auth" },
+  { value: "billing", label: "Billing" },
+  { value: "bug", label: "Bug" },
+  { value: "feature", label: "Feature" },
+];
+
+const NEW_TICKET_STATUSES = ["open", "in-progress", "resolved", "closed"];
+const NEW_TICKET_PRIORITIES = ["low", "medium", "high", "urgent"];
+const NEW_TICKET_CATEGORY_VALUES = NEW_TICKET_CATEGORIES.map((c) => c.value);
+
+const NEW_TICKET_FIELD_RULES = {
+  title: [
+    required(),
+    minLength(5, "Title must be at least 5 characters"),
+    maxLength(100),
+  ],
+  description: [
+    required(),
+    minLength(10, "Description must be at least 10 characters"),
+    maxLength(8000),
+  ],
+  customerName: [required(), maxLength(200)],
+  customerEmail: [required(), email()],
+  category: [required(), oneOf(NEW_TICKET_CATEGORY_VALUES)],
+  status: [required(), oneOf(NEW_TICKET_STATUSES)],
+  priority: [required(), oneOf(NEW_TICKET_PRIORITIES)],
+};
+
+function wireCreateTicketFieldBlur(control) {
+  const rules = NEW_TICKET_FIELD_RULES[control.name];
+  if (!rules) return;
+  control.addEventListener("blur", () => {
+    validateField(control, rules);
+  });
+}
+
+function appendSelectOptions(select, pairs) {
+  for (const [value, label] of pairs) {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = label;
+    select.appendChild(o);
+  }
+}
+
+function formFieldRow(labelText, control) {
+  const wrap = document.createElement("div");
+  wrap.className = "dh-field";
+  const lab = document.createElement("label");
+  lab.className = "dh-field-label";
+  lab.htmlFor = control.id;
+  lab.textContent = labelText;
+  wrap.append(lab, control);
+  return wrap;
+}
+
+async function openCreateTicketModal() {
+  let users;
+  try {
+    users = await loadUsersOnce();
+  } catch (e) {
+    console.error(e);
+    showToast("Could not load assignee list.", "error");
+    return;
+  }
+  if (!Array.isArray(users)) users = [];
+
+  const form = document.createElement("form");
+  form.className = "dh-new-ticket-form";
+  form.noValidate = true;
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.id = "new-ticket-title";
+  titleInput.name = "title";
+  titleInput.className = "search-input";
+  titleInput.autocomplete = "off";
+  titleInput.placeholder = "Short summary";
+
+  const descInput = document.createElement("textarea");
+  descInput.id = "new-ticket-desc";
+  descInput.name = "description";
+  descInput.className = "search-input";
+  descInput.rows = 4;
+  descInput.placeholder = "What happened? What do they need?";
+
+  const custName = document.createElement("input");
+  custName.type = "text";
+  custName.id = "new-ticket-customer-name";
+  custName.name = "customerName";
+  custName.className = "search-input";
+  custName.placeholder = "Customer name";
+
+  const custEmail = document.createElement("input");
+  custEmail.type = "email";
+  custEmail.id = "new-ticket-customer-email";
+  custEmail.name = "customerEmail";
+  custEmail.className = "search-input";
+  custEmail.placeholder = "customer@example.com";
+
+  const categorySel = document.createElement("select");
+  categorySel.id = "new-ticket-category";
+  categorySel.name = "category";
+  categorySel.className = "filter-select";
+  for (const { value, label } of NEW_TICKET_CATEGORIES) {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = label;
+    categorySel.appendChild(o);
+  }
+
+  const statusSel = document.createElement("select");
+  statusSel.id = "new-ticket-status";
+  statusSel.name = "status";
+  statusSel.className = "filter-select";
+  appendSelectOptions(statusSel, [
+    ["open", "Open"],
+    ["in-progress", "In progress"],
+    ["resolved", "Resolved"],
+    ["closed", "Closed"],
+  ]);
+  statusSel.value = "open";
+
+  const prioritySel = document.createElement("select");
+  prioritySel.id = "new-ticket-priority";
+  prioritySel.name = "priority";
+  prioritySel.className = "filter-select";
+  appendSelectOptions(prioritySel, [
+    ["low", "Low"],
+    ["medium", "Medium"],
+    ["high", "High"],
+    ["urgent", "Urgent"],
+  ]);
+  prioritySel.value = "medium";
+
+  const assigneeSel = document.createElement("select");
+  assigneeSel.id = "new-ticket-assignee";
+  assigneeSel.name = "assignedTo";
+  assigneeSel.className = "filter-select";
+  const un = document.createElement("option");
+  un.value = "";
+  un.textContent = "Unassigned";
+  assigneeSel.appendChild(un);
+  for (const u of users) {
+    const o = document.createElement("option");
+    o.value = String(u.id);
+    o.textContent = u.name ?? `User #${u.id}`;
+    assigneeSel.appendChild(o);
+  }
+
+  form.append(
+    formFieldRow("Title *", titleInput),
+    formFieldRow("Description", descInput),
+    formFieldRow("Customer name", custName),
+    formFieldRow("Customer email", custEmail),
+    formFieldRow("Category", categorySel),
+    formFieldRow("Status", statusSel),
+    formFieldRow("Priority", prioritySel),
+    formFieldRow("Assignee", assigneeSel)
+  );
+
+  const actions = document.createElement("div");
+  actions.className = "dh-modal-actions";
+  const btnCancel = document.createElement("button");
+  btnCancel.type = "button";
+  btnCancel.className = "btn-secondary";
+  btnCancel.textContent = "Cancel";
+  const btnCreate = document.createElement("button");
+  btnCreate.type = "button";
+  btnCreate.className = "btn-primary";
+  btnCreate.textContent = "Create";
+  actions.append(btnCancel, btnCreate);
+  form.appendChild(actions);
+
+  for (const name of Object.keys(NEW_TICKET_FIELD_RULES)) {
+    const el = form.elements.namedItem(name);
+    if (
+      el instanceof HTMLInputElement ||
+      el instanceof HTMLTextAreaElement ||
+      el instanceof HTMLSelectElement
+    ) {
+      wireCreateTicketFieldBlur(el);
+    }
+  }
+
+  let submitting = false;
+  const syncCreateDisabled = () => {
+    btnCreate.disabled =
+      submitting || !isFormSatisfiesRules(form, NEW_TICKET_FIELD_RULES);
+  };
+
+  const onFormValueChange = () => syncCreateDisabled();
+  for (const el of [titleInput, descInput, custName, custEmail]) {
+    el.addEventListener("input", onFormValueChange);
+  }
+  for (const el of [categorySel, statusSel, prioritySel, assigneeSel]) {
+    el.addEventListener("change", onFormValueChange);
+  }
+
+  syncCreateDisabled();
+
+  btnCancel.addEventListener("click", () => closeModal());
+
+  btnCreate.addEventListener("click", async () => {
+    const { isValid, errors } = validateForm(form, NEW_TICKET_FIELD_RULES);
+    if (!isValid) {
+      const firstKey = Object.keys(NEW_TICKET_FIELD_RULES).find((k) => errors[k]);
+      if (firstKey) {
+        const el = form.elements.namedItem(firstKey);
+        if (el instanceof HTMLElement && "focus" in el) {
+          el.focus();
+        }
+      }
+      showToast("Please fix the highlighted fields.", "warning");
+      syncCreateDisabled();
+      return;
+    }
+
+    const title = titleInput.value.trim();
+
+    const rawAssign = assigneeSel.value;
+    const assignedNum = rawAssign === "" ? null : Number(rawAssign);
+    const assignedTo =
+      assignedNum != null && Number.isFinite(assignedNum) ? assignedNum : null;
+
+    submitting = true;
+    syncCreateDisabled();
+    btnCancel.disabled = true;
+    try {
+      await createTicket({
+        title,
+        description: descInput.value.trim(),
+        status: statusSel.value,
+        priority: prioritySel.value,
+        category: categorySel.value,
+        customerName: custName.value.trim(),
+        customerEmail: custEmail.value.trim(),
+        assignedTo,
+      });
+      closeModal();
+      state.page = 1;
+      await refresh();
+      showToast("Ticket created", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err?.message || "Could not create ticket.", "error");
+    } finally {
+      submitting = false;
+      btnCancel.disabled = false;
+      syncCreateDisabled();
+    }
+  });
+
+  void openModal(form, { title: "New ticket" });
 }
 
 export async function initTicketsList() {
@@ -460,6 +728,18 @@ export async function initTicketsList() {
   const priorityEl = document.getElementById("filter-priority");
   const assigneeEl = document.getElementById("filter-assignee");
   const sortEl = document.getElementById("sort-by");
+
+  document.getElementById("filter-reset-btn")?.addEventListener("click", () => {
+    state.search = "";
+    state.status = "";
+    state.priority = "";
+    state.assignee = "";
+    state.sortBy = "createdAt";
+    state.page = 1;
+    applyStateToDom(searchInput, statusEl, priorityEl, assigneeEl, sortEl);
+    syncUrlFromState();
+    refresh();
+  });
 
   if (!searchInput || !statusEl || !priorityEl || !assigneeEl || !sortEl) {
     console.error("tickets.js: required DOM nodes missing");
@@ -511,6 +791,9 @@ export async function initTicketsList() {
     refresh();
   });
 
+  document.getElementById("new-ticket-btn")?.addEventListener("click", () => {
+    void openCreateTicketModal();
+  });
 
   try {
     await loadAssigneeOptions();

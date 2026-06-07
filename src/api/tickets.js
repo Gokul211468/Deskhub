@@ -48,7 +48,7 @@
  * api/tickets.js — Ticket API calls (json-server)
  */
 
-import { get, post, patch, del, getWithTotal } from "./client.js";
+import { get, post, patch as httpPatch, del, getWithTotal } from "./client.js";
 
 
 export function buildQueryString(state = {}) {
@@ -128,7 +128,7 @@ export async function updateTicket(id, patch) {
     ...patch,
     updatedAt: new Date().toISOString(),
   };
-  return patch(`/tickets/${encodeURIComponent(id)}`, body);
+  return httpPatch(`/tickets/${encodeURIComponent(id)}`, body);
 }
 
 
