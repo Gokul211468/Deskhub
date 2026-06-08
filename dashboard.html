@@ -22,7 +22,37 @@
                 <h2>You're in! 🎉</h2>
                 <p id="user-welcome">Welcome back!</p>
             </div>
+
+            <p id="dashboard-stats-error" class="dashboard-stats-error" hidden role="alert"></p>
+
+            <section class="dashboard-stats" id="dashboard-stats" aria-label="Ticket overview">
+                <a href="tickets.html" class="dashboard-stat-card">
+                    <span class="dashboard-stat-label">Total tickets</span>
+                    <span class="dashboard-stat-value" id="stat-total">—</span>
+                </a>
+                <a href="tickets.html?status=open" class="dashboard-stat-card">
+                    <span class="dashboard-stat-label">Open</span>
+                    <span class="dashboard-stat-value" id="stat-open">—</span>
+                </a>
+                <a href="tickets.html?status=in-progress" class="dashboard-stat-card">
+                    <span class="dashboard-stat-label">In progress</span>
+                    <span class="dashboard-stat-value" id="stat-in-progress">—</span>
+                </a>
+                <a href="tickets.html?status=resolved" class="dashboard-stat-card">
+                    <span class="dashboard-stat-label">Resolved</span>
+                    <span class="dashboard-stat-value" id="stat-resolved">—</span>
+                </a>
+            </section>
+            <section class="dashboard-recent" aria-labelledby="dashboard-recent-heading">
+                <div class="dashboard-recent-header">
+                    <h2 id="dashboard-recent-heading" class="dashboard-section-heading">Recent tickets</h2>
+                    <a href="tickets.html" class="dashboard-recent-all-link">View all</a>
+                </div>
+                <ul id="dashboard-recent-list" class="dashboard-recent-list"></ul>
+                <p id="dashboard-recent-empty" class="dashboard-recent-empty" hidden>No tickets yet.</p>
+            </section>
         </main>
+
     </div>
 
     <script type="module" src="src/main.js"></script>

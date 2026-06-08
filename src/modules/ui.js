@@ -1,61 +1,21 @@
-/**
- * modules/ui.js — UI Primitives (Toast, Modal, Loader)
- *
- * Reusable UI bits used across pages.
- *
- * Suggested approach: each function appends/manipulates a fixed-position element.
- * No framework — just create elements with document.createElement.
- *
- * TODO:
- *   [ ] showToast(message, type = "info")
- *       - types: "info", "success", "error", "warning"
- *       - auto-dismiss after 3 seconds
- *       - stack multiple if called rapidly
- *   [ ] openModal(contentNode | htmlString)
- *       - dim background, render modal in centre
- *       - close on Esc, click outside, or close button
- *       - return a promise that resolves on close (with whatever the modal returns)
- *   [ ] closeModal()
- *   [ ] showLoader() / hideLoader()
- *       - simple overlay or spinner; could be inline or full-screen
- *   [ ] confirmDialog(message) — returns a Promise<boolean>; uses your modal
- */
-
-// export function showToast(message, type = "info") {
-//   // TODO
-// }
-
-// export function openModal(content) {
-//   // TODO
-// }
-
-// export function closeModal() {
-//   // TODO
-// }
-
-// export function showLoader() {
-//   // TODO
-// }
-
-// export function hideLoader() {
-//   // TODO
-// }
-
-// export function confirmDialog(message) {
-//   // TODO
-// }
-
 
 
 const TOAST_DURATION_MS = 3000;
+const TOAST_EXIT_MS = 280;
+const MAX_VISIBLE_TOASTS = 6;
+
+const TOAST_TYPES = new Set(["info", "success", "error", "warning"]);
 
 let toastHost = null;
+
 let modalBackdrop = null;
 let modalResolver = null;
 let modalKeyHandler = null;
+let modalIsClosing = false;
 let previousActiveElement = null;
 
-const TOAST_TYPES = new Set(["info", "success", "error", "warning"]);
+let loaderEl = null;
+let loaderDepth = 0;
 
 function ensureToastHost() {
   if (toastHost && document.body.contains(toastHost)) return toastHost;
@@ -67,37 +27,72 @@ function ensureToastHost() {
   return toastHost;
 }
 
+function removeToastHostIfEmpty(host) {
+  if (host?.childElementCount === 0) {
+    host.remove();
+    toastHost = null;
+  }
+}
 
-export function showToast(message, type = "info") {
+function dismissToastElement(el, { immediate = false } = {}) {
+  if (!el?.isConnected) return;
+  const host = el.parentElement;
+
+  const cleanup = () => {
+    el.remove();
+    if (host) removeToastHostIfEmpty(host);
+  };
+
+  if (immediate) {
+    cleanup();
+    return;
+  }
+
+  el.classList.remove("dh-toast--visible");
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    cleanup();
+  };
+  el.addEventListener("transitionend", finish, { once: true });
+  window.setTimeout(finish, TOAST_EXIT_MS);
+}
+
+function trimOldestToasts(host, maxBeforeAdd) {
+  while (host.childElementCount >= maxBeforeAdd) {
+    const oldest = host.firstElementChild;
+    if (!oldest) break;
+    dismissToastElement(oldest, { immediate: true });
+  }
+}
+
+/**
+ * @param {string} message
+ * @param {"info"|"success"|"error"|"warning"} [type]
+ * @param {{ duration?: number }} [opts] — duration in ms (default 3000)
+ */
+export function showToast(message, type = "info", opts = {}) {
   const variant = TOAST_TYPES.has(type) ? type : "info";
+  const duration =
+    typeof opts.duration === "number" && opts.duration >= 0
+      ? opts.duration
+      : TOAST_DURATION_MS;
+
   const host = ensureToastHost();
+  trimOldestToasts(host, MAX_VISIBLE_TOASTS);
+
   const el = document.createElement("div");
   el.className = `dh-toast dh-toast--${variant}`;
   el.setAttribute("role", "status");
   el.textContent = String(message ?? "");
 
   host.appendChild(el);
-  requestAnimationFrame(() => el.classList.add("dh-toast--visible"));
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => el.classList.add("dh-toast--visible"));
+  });
 
-  const remove = () => {
-    el.classList.remove("dh-toast--visible");
-    el.addEventListener(
-      "transitionend",
-      () => {
-        el.remove();
-        if (host.childElementCount === 0) {
-          host.remove();
-          toastHost = null;
-        }
-      },
-      { once: true }
-    );
-    window.setTimeout(() => {
-      if (el.isConnected) el.remove();
-    }, 400);
-  };
-
-  window.setTimeout(remove, TOAST_DURATION_MS);
+  window.setTimeout(() => dismissToastElement(el), duration);
 }
 
 function teardownModal(result) {
@@ -109,27 +104,72 @@ function teardownModal(result) {
     modalBackdrop.remove();
     modalBackdrop = null;
   }
+  modalIsClosing = false;
   const resolve = modalResolver;
   modalResolver = null;
   if (typeof resolve === "function") {
     resolve(result);
   }
-  if (previousActiveElement && typeof previousActiveElement.focus === "function") {
+  if (
+    previousActiveElement &&
+    typeof previousActiveElement.focus === "function"
+  ) {
     previousActiveElement.focus();
   }
   previousActiveElement = null;
 }
 
-
+/**
+ * @param {*} [result] — passed to the promise returned by openModal
+ */
 export function closeModal(result) {
-  if (!modalBackdrop) return;
-  teardownModal(result);
+  if (!modalBackdrop || modalIsClosing) return;
+
+  const backdrop = modalBackdrop;
+  const panel = backdrop.querySelector(".dh-modal-panel");
+  modalIsClosing = true;
+
+  backdrop.classList.remove("dh-modal-backdrop--open");
+  if (panel) panel.classList.remove("dh-modal-panel--open");
+
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    teardownModal(result);
+  };
+
+  const target = panel ?? backdrop;
+  target.addEventListener("transitionend", finish, { once: true });
+  window.setTimeout(finish, 320);
 }
 
+function forceCloseModalNoAnimation() {
+  if (modalKeyHandler) {
+    document.removeEventListener("keydown", modalKeyHandler);
+    modalKeyHandler = null;
+  }
+  modalIsClosing = false;
+  if (modalBackdrop) {
+    modalBackdrop.remove();
+    modalBackdrop = null;
+  }
+  const resolve = modalResolver;
+  modalResolver = null;
+  if (typeof resolve === "function") {
+    resolve(undefined);
+  }
+  previousActiveElement = null;
+}
 
+/**
+ * @param {HTMLElement|string} content
+ * @param {{ title?: string }} [options]
+ * @returns {Promise<*>}
+ */
 export function openModal(content, options = {}) {
   if (modalBackdrop) {
-    teardownModal(undefined);
+    forceCloseModalNoAnimation();
   }
 
   const { title } = options;
@@ -192,6 +232,13 @@ export function openModal(content, options = {}) {
     };
     document.addEventListener("keydown", modalKeyHandler);
 
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        backdrop.classList.add("dh-modal-backdrop--open");
+        panel.classList.add("dh-modal-panel--open");
+      });
+    });
+
     const focusable = panel.querySelector(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
@@ -202,7 +249,6 @@ export function openModal(content, options = {}) {
     }
   });
 }
-
 
 export function confirmDialog(message, opts = {}) {
   const { okText = "OK", cancelText = "Cancel", title = "Confirm" } = opts;
@@ -236,4 +282,70 @@ export function confirmDialog(message, opts = {}) {
   btnOk.addEventListener("click", () => closeModal(true));
 
   return promise.then((v) => v === true);
+}
+
+function ensureLoaderElement(message) {
+  if (loaderEl && document.body.contains(loaderEl)) {
+    const text = loaderEl.querySelector(".dh-loader-text");
+    if (text && message) text.textContent = message;
+    return loaderEl;
+  }
+
+  const root = document.createElement("div");
+  root.id = "dh-fullpage-loader";
+  root.className = "dh-fullpage-loader";
+  root.setAttribute("role", "status");
+  root.setAttribute("aria-live", "polite");
+  root.setAttribute("aria-busy", "true");
+
+  const inner = document.createElement("div");
+  inner.className = "dh-loader-inner";
+
+  const spinner = document.createElement("div");
+  spinner.className = "dh-loader-spinner";
+  spinner.setAttribute("aria-hidden", "true");
+
+  const text = document.createElement("p");
+  text.className = "dh-loader-text";
+  text.textContent = message || "Loading…";
+
+  inner.append(spinner, text);
+  root.appendChild(inner);
+  document.body.appendChild(root);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => root.classList.add("dh-fullpage-loader--visible"));
+  });
+
+  loaderEl = root;
+  return root;
+}
+
+/**
+ * Full-screen loader for slow network/API work. Nesting-safe (ref count).
+ * @param {string} [message] — shown under spinner (first call wins until fully hidden)
+ */
+export function showLoader(message = "") {
+  loaderDepth += 1;
+  ensureLoaderElement(message);
+}
+
+/** Pair with showLoader; removes overlay when outermost showLoader is balanced. */
+export function hideLoader() {
+  loaderDepth = Math.max(0, loaderDepth - 1);
+  if (loaderDepth > 0) return;
+
+  if (!loaderEl?.isConnected) {
+    loaderEl = null;
+    return;
+  }
+
+  const el = loaderEl;
+  loaderEl = null;
+  el.classList.remove("dh-fullpage-loader--visible");
+  const done = () => {
+    el.remove();
+  };
+  el.addEventListener("transitionend", done, { once: true });
+  window.setTimeout(done, 220);
 }

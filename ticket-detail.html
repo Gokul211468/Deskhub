@@ -65,11 +65,18 @@
             </section>
 
             <section class="ticket-controls-section" aria-labelledby="ticket-controls-heading">
-                <h2 id="ticket-controls-heading" class="ticket-section-heading">Update ticket</h2>
-                <div class="ticket-controls-grid">
+                <div class="ticket-controls-heading-row">
+                    <h2 id="ticket-controls-heading" class="ticket-section-heading">Update ticket</h2>
+                    <div class="ticket-controls-toolbar">
+                        <button type="button" id="edit-ticket-btn" class="btn-secondary">Edit</button>
+                        <button type="button" id="save-ticket-btn" class="btn-primary" hidden>Save</button>
+                        <button type="button" id="cancel-edit-btn" class="btn-secondary" hidden>Cancel</button>
+                    </div>
+                </div>
+                <div id="ticket-controls-grid" class="ticket-controls-grid">
                     <div class="filter-group">
                         <label for="status-select">Status</label>
-                        <select id="status-select" class="filter-select">
+                        <select id="status-select" class="filter-select" disabled>
                             <option value="open">Open</option>
                             <option value="in-progress">In Progress</option>
                             <option value="resolved">Resolved</option>
@@ -78,7 +85,7 @@
                     </div>
                     <div class="filter-group">
                         <label for="priority-select">Priority</label>
-                        <select id="priority-select" class="filter-select">
+                        <select id="priority-select" class="filter-select" disabled>
                             <option value="low">Low</option>
                             <option value="medium">Medium</option>
                             <option value="high">High</option>
@@ -87,7 +94,7 @@
                     </div>
                     <div class="filter-group">
                         <label for="assignee-select">Assignee</label>
-                        <select id="assignee-select" class="filter-select">
+                        <select id="assignee-select" class="filter-select" disabled>
                             <option value="">Unassigned</option>
                         </select>
                     </div>

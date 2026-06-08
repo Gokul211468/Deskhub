@@ -17,37 +17,15 @@
  *   [ ] Redirect to /login.html if no token (except on login page itself)
  */
 
-import { initLogin, initLogout, requireAuth } from "./modules/auth.js";
+import { initLogin, requireAuth } from "./modules/auth.js";
 import { initTicketsList } from "./modules/tickets.js";
 import { initTicketDetail } from "./modules/ticketDetail.js";
+import { initDashboard } from "./modules/dashboard.js";
 
 
 console.log("DeskHub booting…");
 
 const page = document.body.dataset.page;
-
-// Dashboard initialization function
-function initDashboard() {
-    console.log("🏠 Dashboard initialized");
-    
-    // Initialize logout button functionality
-    initLogout("#logout-btn");
-    
-    // Show user welcome message
-    showUserWelcome();
-}
-
-function showUserWelcome() {
-    // Get current user from storage  
-    const user = JSON.parse(localStorage.getItem('deskhub:user') || '{}');
-    
-    if (user.name) {
-        const welcomeElement = document.getElementById('user-welcome');
-        if (welcomeElement) {
-            welcomeElement.textContent = `Welcome back, ${user.name}! (${user.role})`;
-        }
-    }
-}
 
 if (!page) {
   console.error("No data-page attribute found on <body>. Add data-page='pagename' to your HTML.");
@@ -63,7 +41,7 @@ if (!(protectedPages.has(page) && !requireAuth())) {
       initLogin();
       break;
     case "dashboard":
-      initDashboard();
+      void initDashboard();
       break;
     case "tickets-list":
       initTicketsList();

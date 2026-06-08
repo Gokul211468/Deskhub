@@ -56,7 +56,7 @@ import {
   import { getCurrentUser } from "../api/auth.js";
   import { requireAuth, initLogout } from "./auth.js";
   import { formatDateTime } from "../utils/formatDate.js";
-  import { showToast, confirmDialog } from "./ui.js";
+  import { showToast, confirmDialog, showLoader, hideLoader } from "./ui.js";
   
   let usersCache = null;
   let usersLoadPromise = null;
@@ -195,29 +195,82 @@ import {
       if (loading) loading.hidden = true;
       return;
     }
-  
+
+    const statusSelect = document.getElementById("status-select");
+    const prioritySelect = document.getElementById("priority-select");
+    const assigneeSelect = document.getElementById("assignee-select");
+    const editBtn = document.getElementById("edit-ticket-btn");
+    const saveBtn = document.getElementById("save-ticket-btn");
+    const cancelBtn = document.getElementById("cancel-edit-btn");
+
+    /** Last saved values from the server (for Cancel + change detection). */
+    let controlsSnapshot = {
+      status: "open",
+      priority: "medium",
+      assignedTo: null,
+    };
+
+    function syncSnapshotFromTicket(ticket) {
+      controlsSnapshot = {
+        status: ticket.status ?? "open",
+        priority: ticket.priority ?? "medium",
+        assignedTo:
+          ticket.assignedTo == null || ticket.assignedTo === ""
+            ? null
+            : Number(ticket.assignedTo),
+      };
+      if (
+        controlsSnapshot.assignedTo != null &&
+        !Number.isFinite(controlsSnapshot.assignedTo)
+      ) {
+        controlsSnapshot.assignedTo = null;
+      }
+    }
+
+    function applySnapshotToSelects() {
+      if (!statusSelect || !prioritySelect || !assigneeSelect) return;
+      statusSelect.value = controlsSnapshot.status;
+      prioritySelect.value = controlsSnapshot.priority;
+      const a = controlsSnapshot.assignedTo;
+      assigneeSelect.value = a == null ? "" : String(a);
+    }
+
+    function setControlsEditing(editing) {
+      if (!statusSelect || !prioritySelect || !assigneeSelect) return;
+      statusSelect.disabled = !editing;
+      prioritySelect.disabled = !editing;
+      assigneeSelect.disabled = !editing;
+      if (editBtn) editBtn.hidden = editing;
+      if (saveBtn) saveBtn.hidden = !editing;
+      if (cancelBtn) cancelBtn.hidden = !editing;
+    }
+
     async function loadAll() {
       if (loading) loading.hidden = false;
       if (errBox) errBox.hidden = true;
       if (shell) shell.hidden = true;
       if (commentsShell) commentsShell.hidden = true;
-  
+
       try {
         const [users, ticket, commentsRaw] = await Promise.all([
             loadUsersOnce(),
             getTicket(ticketId),
             listComments(ticketId),
           ]);
-  
+
         const nameByUserId = userNameMap(users);
         const comments = Array.isArray(commentsRaw) ? commentsRaw : [];
-  
-        const assigneeSelect = document.getElementById("assignee-select");
-        if (assigneeSelect) fillAssigneeSelect(assigneeSelect, users, ticket.assignedTo);
-  
+
+        const assigneeEl = document.getElementById("assignee-select");
+        if (assigneeEl) fillAssigneeSelect(assigneeEl, users, ticket.assignedTo);
+
         renderTicket(ticket);
         renderComments(comments, nameByUserId);
-  
+
+        syncSnapshotFromTicket(ticket);
+        applySnapshotToSelects();
+        setControlsEditing(false);
+
         if (shell) shell.hidden = false;
         if (commentsShell) commentsShell.hidden = false;
       } catch (err) {
@@ -227,48 +280,69 @@ import {
         if (loading) loading.hidden = true;
       }
     }
-  
+
     await loadAll();
-  
-    const statusSelect = document.getElementById("status-select");
-    const prioritySelect = document.getElementById("priority-select");
-    const assigneeSelect = document.getElementById("assignee-select");
-  
-    async function patchTicket(partial) {
+
+    editBtn?.addEventListener("click", () => {
+      applySnapshotToSelects();
+      setControlsEditing(true);
+      statusSelect?.focus();
+    });
+
+    cancelBtn?.addEventListener("click", () => {
+      applySnapshotToSelects();
+      setControlsEditing(false);
+    });
+
+    saveBtn?.addEventListener("click", async () => {
+      if (!statusSelect || !prioritySelect || !assigneeSelect) return;
+
+      const rawAssign = assigneeSelect.value;
+      const assignedNum = rawAssign === "" ? null : Number(rawAssign);
+      const assignedTo =
+        assignedNum != null && Number.isFinite(assignedNum) ? assignedNum : null;
+
+      const next = {
+        status: statusSelect.value,
+        priority: prioritySelect.value,
+        assignedTo,
+      };
+
+      const unchanged =
+        next.status === controlsSnapshot.status &&
+        next.priority === controlsSnapshot.priority &&
+        next.assignedTo === controlsSnapshot.assignedTo;
+
+      if (unchanged) {
+        showToast("No changes to save.", "info");
+        setControlsEditing(false);
+        return;
+      }
+
+      if (saveBtn) saveBtn.disabled = true;
+      if (cancelBtn) cancelBtn.disabled = true;
+      if (editBtn) editBtn.disabled = true;
+
       try {
-        await updateTicket(ticketId, partial);
+        await updateTicket(ticketId, {
+          status: next.status,
+          priority: next.priority,
+          assignedTo: next.assignedTo,
+        });
+        showToast("Ticket updated", "success");
         await loadAll();
-        if (Object.prototype.hasOwnProperty.call(partial, "status")) {
-          showToast("Status updated", "success");
-        }
-        if (Object.prototype.hasOwnProperty.call(partial, "priority")) {
-          showToast("Priority updated", "success");
-        }
-        if (Object.prototype.hasOwnProperty.call(partial, "assignedTo")) {
-            showToast("Assignee updated", "success");
-          }
       } catch (err) {
         console.error(err);
         window.alert(err?.message || "Update failed.");
         await loadAll();
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+        if (cancelBtn) cancelBtn.disabled = false;
+        if (editBtn) editBtn.disabled = false;
+        setControlsEditing(false);
       }
-    }
-  
-    statusSelect?.addEventListener("change", () => {
-      patchTicket({ status: statusSelect.value });
     });
-  
-    prioritySelect?.addEventListener("change", () => {
-      patchTicket({ priority: prioritySelect.value });
-    });
-  
-    assigneeSelect?.addEventListener("change", () => {
-      const v = assigneeSelect.value;
-      patchTicket({
-        assignedTo: v === "" ? null : Number(v),
-      });
-    });
-  
+
     document.getElementById("add-comment-btn")?.addEventListener("click", async () => {
       const ta = document.getElementById("new-comment");
       const content = (ta?.value ?? "").trim();
@@ -287,6 +361,7 @@ import {
           content,
         });
         if (ta) ta.value = "";
+        showToast("Comment posted", "success");
         await loadAll();
       } catch (err) {
         console.error(err);
@@ -304,6 +379,7 @@ import {
         }
       );
       if (!ok) return;
+      showLoader("Deleting ticket…");
       try {
         await deleteTicket(ticketId);
         showToast("Ticket deleted", "success");
@@ -311,6 +387,8 @@ import {
       } catch (err) {
         console.error(err);
         showToast(err?.message || "Delete failed.", "error");
+      } finally {
+        hideLoader();
       }
     });
   }

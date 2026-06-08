@@ -1,128 +1,119 @@
-# DeskHub — Capstone Project
+# DeskHub
 
-A vanilla- JS support ticket dashboard. Build it after completing the 27-session JavaScript training.
+Vanilla JavaScript support ticket app: login, dashboard, ticket list (filters, pagination, CSV export), and ticket detail with comments. Data comes from a **json-server**-style REST API.
 
-> **For the full project specification, read [PROJECT_GUIDE.md](./PROJECT_GUIDE.md).**
-> **For the day-by-day checklist (Days 28–32), read [DAILY_TASKS.md](./DAILY_TASKS.md).**
+## Requirements
 
----
+- **Node.js** 18+ (recommended)
 
-## Quick Start
+## Quick start
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Run the API + UI together (one command)
 npm run dev
 ```
 
-This starts two things:
+This starts two processes (see `package.json`):
 
-| Service | URL | Purpose |
-|---|---|---|
-| `json-server` | http://localhost:3001 | Fake REST API (CRUD over `db.json`) |
-| `live-server` | http://localhost:8080 | Static file server with auto-reload |
+| Service        | Port   | Role |
+|----------------|--------|------|
+| `json-server`  | **3001** | REST API over `db.json` (optional 200 ms delay) |
+| `live-server`  | **8080** | Static site with live reload |
 
----
+Open **http://localhost:8080**.
 
-## What You Need to Create
+### API base URL
 
-You're given:
+All HTTP calls go through `src/api/client.js` and use `BASE_URL`.
 
-- A working backend (`json-server` over `db.json`) — no backend code needed
-- Stub JS modules in `src/` with TODO comments showing what to implement
-- An empty `public/` folder
+- The repo may point at a **hosted** API (e.g. Render) or **`http://localhost:3001`** for local json-server.
+- For **local** work with `npm run dev`, set `BASE_URL` to `http://localhost:3001` so the UI hits the same machine as `npm run api`.
 
-**You build:**
+## Pages
 
-- All HTML files inside `public/` (login, dashboard, tickets list, ticket detail, etc.)
-- All CSS — the project has no design tokens; make it look professional
-- All JS logic inside `src/` — every TODO in every stub
-- The full README explaining your architecture (you'll edit this file)
+| File                 | `data-page`     | Purpose |
+|----------------------|-----------------|-----------|
+| `index.html`         | `login`         | Sign in |
+| `dashboard.html`     | `dashboard`     | Welcome, ticket counts, recent tickets |
+| `tickets.html`       | `tickets-list`  | Search, filters, sort, pagination, new ticket, **Export CSV** |
+| `ticket-detail.html` | `ticket-detail` | Ticket fields, comments, delete |
 
----
+Entry: `src/main.js` reads `document.body.dataset.page` and runs the matching `init*()` helper. Protected routes use `requireAuth()` from `src/modules/auth.js`.
 
-## Folder Structure
+## Features
+
+- **Auth:** login against `/users`; session in `localStorage` (`src/modules/auth.js`, `src/utils/storage.js`).
+- **Tickets:** list with `q`, status, priority, assignee, sort; URL query sync; empty and error states (`src/modules/tickets.js`).
+- **Ticket detail:** load ticket + comments; patch status / priority / assignee; add comments; delete with confirm (`src/modules/ticketDetail.js`).
+- **Dashboard:** counts by status + up to five most recent tickets with links to detail (`src/modules/dashboard.js`).
+- **API:** `src/api/client.js` (`get`, `post`, `patch`, `del`, paginated `getWithTotal`) and `src/api/tickets.js` (`listTickets`, `getTicket`, `createTicket`, …).
+- **UI:** toasts, modal, full-screen loader (`src/modules/ui.js`).
+- **CSV export:** on the tickets page, **Export CSV** downloads **all tickets matching current filters**, fetched in pages of 100 (`src/utils/csv.js` + `tickets.js`).
+
+## Project layout
 
 ```
-deskhub-starter/
-├── package.json          ← given
-├── db.json               ← given (seed data: 5 users, 30 tickets, 20 comments)
-├── README.md             ← given (you edit)
-├── PROJECT_GUIDE.md      ← given (read this first!)
-├── public/               ← YOU create — HTML + CSS lives here
-│   ├── index.html        ← (you build)
-│   ├── styles/           ← (you build)
-│   └── ...
-└── src/                  ← partially given — stubs to fill in
-    ├── main.js           ← stub
+├── db.json                 # Seed: users, tickets, comments
+├── index.html
+├── dashboard.html
+├── tickets.html
+├── ticket-detail.html
+├── styles/main.css
+├── package.json
+└── src/
+    ├── main.js
     ├── api/
-    │   ├── client.js     ← stub (generic fetch wrapper)
-    │   ├── tickets.js    ← stub (ticket CRUD calls)
-    │   └── auth.js       ← stub (login / logout)
+    │   ├── client.js
+    │   ├── tickets.js
+    │   └── auth.js
     ├── modules/
-    │   ├── auth.js       ← stub (login UI wiring)
-    │   ├── tickets.js    ← stub (list page logic)
-    │   ├── ticketDetail.js ← stub (detail page logic)
-    │   ├── form.js       ← stub (form validation)
-    │   └── ui.js         ← stub (toast, modal, loader)
+    │   ├── auth.js
+    │   ├── dashboard.js
+    │   ├── tickets.js
+    │   ├── ticketDetail.js
+    │   ├── ui.js
+    │   └── form.js
     └── utils/
-        ├── debounce.js   ← stub
-        ├── formatDate.js ← stub
-        └── storage.js    ← stub (localStorage wrapper)
+        ├── csv.js
+        ├── debounce.js
+        ├── formatDate.js
+        └── storage.js
 ```
 
----
+## API (json-server)
 
-## API Cheatsheet
+Typical routes:
 
-`json-server` gives you a full REST API over `db.json`. No code needed on the backend side.
+- `GET /users` — user list (login matches email/password in the demo).
+- `GET /tickets` — list; filters (`status`, `priority`, `assignedTo`, …); `q=` search; `_sort` / `_order`; `_page` / `_limit` with `X-Total-Count` when paginated.
+- `GET /tickets/:id`, `POST /tickets`, `PATCH /tickets/:id`, `DELETE /tickets/:id`
+- `GET /comments?ticketId=…`, `POST /comments`
 
-```
-# Tickets
-GET    /tickets                              — list all
-GET    /tickets?status=open                  — filter
-GET    /tickets?_sort=createdAt&_order=desc  — sort
-GET    /tickets?_page=1&_limit=10            — paginate
-GET    /tickets?q=login                      — full-text search
-GET    /tickets/:id                          — one ticket
-POST   /tickets                              — create
-PATCH  /tickets/:id                          — partial update
-DELETE /tickets/:id                          — delete
+Docs: [json-server v0.17](https://github.com/typicode/json-server/tree/v0.17.4).
 
-# Comments (filter by ticket)
-GET    /comments?ticketId=:id
-POST   /comments
+## Demo users (`db.json`)
 
-# Users (for fake login)
-GET    /users?email=:email
-```
+Password for all accounts: **`demo123`**
 
-Combine query params: `GET /tickets?status=open&priority=urgent&_sort=createdAt&_order=desc&_page=1&_limit=10`
+| Email              | Role  |
+|--------------------|-------|
+| priya@deskhub.in   | admin |
+| aarav@deskhub.in   | agent |
+| riya@deskhub.in    | agent |
+| anaya@deskhub.in   | agent |
+| kabir@deskhub.in   | agent |
 
-Full json-server docs: https://github.com/typicode/json-server/tree/v0.17.4
+## Scripts
 
----
+| Command          | Description                    |
+|------------------|--------------------------------|
+| `npm run dev`    | API + static UI together       |
+| `npm run api`    | Only `json-server` on port 3001 |
+| `npm run serve`  | Only `live-server` on port 8080 |
 
-## Demo Login Credentials
+## Limitations
 
-Any of these work for local login (passwords are visible — this is a learning project, not production):
+- Demo only: credentials live in `db.json`, not production-grade security.
+- If the UI and API are on different origins, the server must allow CORS for the UI origin.
 
-```
-priya@deskhub.in   /  demo123   (admin)
-aarav@deskhub.in   /  demo123   (agent)
-riya@deskhub.in    /  demo123   (agent)
-anaya@deskhub.in   /  demo123   (agent)
-kabir@deskhub.in   /  demo123   (agent)
-```
 
----
-
-## Submission
-
-1. Push your work to a GitHub repo
-2. Update this README — replace these sections with your actual setup notes, screenshots, architecture choices, and known limitations
-3. Send the repo link to your trainer
-
-Good luck. Build something you'd be proud to show in an interview.

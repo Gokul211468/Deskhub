@@ -66,7 +66,8 @@ import { get } from "../api/client.js";
 import { debounce } from "../utils/debounce.js";
 import { requireAuth, initLogout } from "./auth.js";
 import { formatDate } from "../utils/formatDate.js";
-import { openModal, closeModal, showToast } from "./ui.js";
+import { downloadCsvLines, toCsvLine } from "../utils/csv.js";
+import { openModal, closeModal, showToast, showLoader, hideLoader } from "./ui.js";
 import {
   required,
   minLength,
@@ -461,6 +462,110 @@ async function loadUsersOnce() {
   return usersLoadPromise;
 }
 
+const CSV_EXPORT_PAGE_SIZE = 100;
+
+const CSV_HEADERS = [
+  "ID",
+  "Title",
+  "Description",
+  "Category",
+  "Status",
+  "Priority",
+  "Customer Name",
+  "Customer Email",
+  "Assignee",
+  "Assignee ID",
+  "Created",
+  "Updated",
+];
+
+function ticketToCsvValues(ticket) {
+  const aid = ticket.assignedTo;
+  let assigneeName = "";
+  if (aid != null && aid !== "") {
+    const n = Number(aid);
+    assigneeName =
+      (Number.isFinite(n) ? userMap.get(n) : undefined) ??
+      userMap.get(aid) ??
+      "";
+  }
+  return [
+    ticket.id ?? "",
+    ticket.title ?? "",
+    ticket.description ?? "",
+    ticket.category ?? "",
+    ticket.status ?? "",
+    ticket.priority ?? "",
+    ticket.customerName ?? "",
+    ticket.customerEmail ?? "",
+    assigneeName,
+    aid == null || aid === "" ? "" : String(aid),
+    ticket.createdAt ?? "",
+    ticket.updatedAt ?? "",
+  ];
+}
+
+/**
+ * Fetch every ticket page matching current filters (same as list view) and download CSV.
+ */
+async function exportAllFilteredTicketsToCsv() {
+  await loadUsersOnce();
+
+  const listOpts = {
+    search: state.search,
+    status: state.status,
+    priority: state.priority,
+    assignee: state.assignee,
+    sortBy: state.sortBy,
+    order: state.order,
+    limit: CSV_EXPORT_PAGE_SIZE,
+  };
+
+  showLoader("Exporting tickets…");
+  try {
+    const { items: firstItems, total } = await listTickets({
+      ...listOpts,
+      page: 1,
+    });
+    const items1 = Array.isArray(firstItems) ? firstItems : [];
+    const totalN =
+      typeof total === "number" && total >= 0 ? total : items1.length;
+
+    if (totalN === 0) {
+      showToast("No tickets to export for the current filters.", "info");
+      return;
+    }
+    if (items1.length === 0) {
+      showToast("Could not load tickets for export.", "error");
+      return;
+    }
+
+    const all = [...items1];
+    const totalPages = Math.max(1, Math.ceil(totalN / CSV_EXPORT_PAGE_SIZE));
+
+    for (let page = 2; page <= totalPages; page++) {
+      const { items } = await listTickets({ ...listOpts, page });
+      if (Array.isArray(items) && items.length > 0) {
+        all.push(...items);
+      }
+    }
+
+    const lines = [toCsvLine(CSV_HEADERS)];
+    for (const t of all) {
+      lines.push(toCsvLine(ticketToCsvValues(t)));
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsvLines(`deskhub-tickets-${stamp}.csv`, lines);
+    showToast(`Exported ${all.length} ticket(s) to CSV.`, "success");
+  } catch (e) {
+    console.error(e);
+    showToast(e?.message ?? "Could not export CSV.", "error");
+  } finally {
+    hideLoader();
+  }
+}
+
 const NEW_TICKET_CATEGORIES = [
   { value: "auth", label: "Auth" },
   { value: "billing", label: "Billing" },
@@ -690,6 +795,7 @@ async function openCreateTicketModal() {
     submitting = true;
     syncCreateDisabled();
     btnCancel.disabled = true;
+    showLoader("Creating ticket…");
     try {
       await createTicket({
         title,
@@ -709,6 +815,7 @@ async function openCreateTicketModal() {
       console.error(err);
       showToast(err?.message || "Could not create ticket.", "error");
     } finally {
+      hideLoader();
       submitting = false;
       btnCancel.disabled = false;
       syncCreateDisabled();
@@ -793,6 +900,10 @@ export async function initTicketsList() {
 
   document.getElementById("new-ticket-btn")?.addEventListener("click", () => {
     void openCreateTicketModal();
+  });
+
+  document.getElementById("export-csv-btn")?.addEventListener("click", () => {
+    void exportAllFilteredTicketsToCsv();
   });
 
   try {
