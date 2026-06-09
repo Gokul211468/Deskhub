@@ -91,8 +91,6 @@ function buildTicketsPath(state = {}) {
   return qs ? `/tickets?${qs}` : "/tickets";
 }
 
-
-
 export async function listTickets(opts = {}) {
   const path = buildTicketsPath(opts);
   const paginated =

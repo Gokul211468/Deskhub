@@ -210,6 +210,8 @@ import {
       assignedTo: null,
     };
 
+    let lastTicket = null;
+
     function syncSnapshotFromTicket(ticket) {
       controlsSnapshot = {
         status: ticket.status ?? "open",
@@ -246,6 +248,7 @@ import {
     }
 
     async function loadAll() {
+      
       if (loading) loading.hidden = false;
       if (errBox) errBox.hidden = true;
       if (shell) shell.hidden = true;
@@ -257,7 +260,7 @@ import {
             getTicket(ticketId),
             listComments(ticketId),
           ]);
-
+        console.log(ticket);
         const nameByUserId = userNameMap(users);
         const comments = Array.isArray(commentsRaw) ? commentsRaw : [];
 
@@ -265,6 +268,7 @@ import {
         if (assigneeEl) fillAssigneeSelect(assigneeEl, users, ticket.assignedTo);
 
         renderTicket(ticket);
+        lastTicket = ticket && typeof ticket === "object" ? { ...ticket } : null;
         renderComments(comments, nameByUserId);
 
         syncSnapshotFromTicket(ticket);
@@ -319,27 +323,84 @@ import {
         return;
       }
 
+      const rollbackSnapshot = { ...controlsSnapshot };
+      const rollbackTicket =
+        lastTicket && typeof lastTicket === "object" ? { ...lastTicket } : null;
+
+      const optimisticUpdatedAt = new Date().toISOString();
+
+      // Optimistic UI: treat save as succeeded immediately
+      controlsSnapshot = {
+        status: next.status,
+        priority: next.priority,
+        assignedTo: next.assignedTo,
+      };
+      applySnapshotToSelects();
+
+      if (lastTicket) {
+        lastTicket = {
+          ...lastTicket,
+          status: next.status,
+          priority: next.priority,
+          assignedTo: next.assignedTo,
+          updatedAt: optimisticUpdatedAt,
+        };
+        renderTicket(lastTicket);
+      }
+
+      setControlsEditing(false);
+
       if (saveBtn) saveBtn.disabled = true;
       if (cancelBtn) cancelBtn.disabled = true;
       if (editBtn) editBtn.disabled = true;
 
       try {
-        await updateTicket(ticketId, {
+        const updated = await updateTicket(ticketId, {
           status: next.status,
           priority: next.priority,
           assignedTo: next.assignedTo,
         });
+
+        if (updated && typeof updated === "object" && updated.id != null) {
+          lastTicket = { ...updated };
+          syncSnapshotFromTicket(lastTicket);
+          applySnapshotToSelects();
+          renderTicket(lastTicket);
+        } else {
+          try {
+            const fresh = await getTicket(ticketId);
+            lastTicket =
+              fresh && typeof fresh === "object" ? { ...fresh } : lastTicket;
+            if (lastTicket) {
+              syncSnapshotFromTicket(lastTicket);
+              applySnapshotToSelects();
+              renderTicket(lastTicket);
+            }
+          } catch (reconcileErr) {
+            console.error(reconcileErr);
+            showToast(
+              "Saved, but could not refresh from server.",
+              "warning"
+            );
+          }
+        }
+
         showToast("Ticket updated", "success");
-        await loadAll();
       } catch (err) {
         console.error(err);
+        controlsSnapshot = rollbackSnapshot;
+        applySnapshotToSelects();
+        if (rollbackTicket) {
+          lastTicket = rollbackTicket;
+          renderTicket(lastTicket);
+        } else {
+          await loadAll();
+        }
         window.alert(err?.message || "Update failed.");
-        await loadAll();
       } finally {
         if (saveBtn) saveBtn.disabled = false;
         if (cancelBtn) cancelBtn.disabled = false;
         if (editBtn) editBtn.disabled = false;
-        setControlsEditing(false);
       }
     });
 
@@ -354,18 +415,24 @@ import {
         return;
       }
   
+      showLoader("Posting comment")
       try {
-        await addComment({
-          ticketId,
-          authorId: me.id,
-          content,
-        });
+        await Promise.all([
+          addComment({
+            ticketId,
+            authorId: me.id,
+            content,
+          }),
+          new Promise((r) => setTimeout(r,2000)),
+        ]);
         if (ta) ta.value = "";
         showToast("Comment posted", "success");
         await loadAll();
       } catch (err) {
         console.error(err);
         window.alert(err?.message || "Could not post comment.");
+      }finally{
+        hideLoader();
       }
     });
   

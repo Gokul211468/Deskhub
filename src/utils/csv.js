@@ -9,15 +9,12 @@ export function escapeCsvCell(value) {
   return s;
 }
 
-/** @param {unknown[]} values */
+
 export function toCsvLine(values) {
   return values.map(escapeCsvCell).join(",");
 }
 
-/**
- * @param {string} filename
- * @param {string[]} lines — already escaped rows (use toCsvLine per row)
- */
+
 export function downloadCsvLines(filename, lines) {
   const body = `\uFEFF${lines.join("\r\n")}`;
   const blob = new Blob([body], { type: "text/csv;charset=utf-8;" });

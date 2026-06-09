@@ -902,6 +902,35 @@ export async function initTicketsList() {
     void openCreateTicketModal();
   });
 
+  function isTypingContext(el) {
+    if (!el?.tagName) return false;
+    const tag = el.tagName.toLowerCase();
+    return (
+      tag === "input" ||
+      tag === "textarea" ||
+      tag === "select" ||
+      el.isContentEditable
+    );
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (isTypingContext(event.target)) return;
+    if (event.defaultPrevented) return;
+
+    const mod = event.ctrlKey || event.metaKey || event.altKey;
+
+    if (event.key === "/" && !mod) {
+      event.preventDefault();
+      searchInput.focus();
+      return;
+    }
+
+    if ((event.key === "n" || event.key === "N") && !mod) {
+      event.preventDefault();
+      void openCreateTicketModal();
+    }
+  });
+
   document.getElementById("export-csv-btn")?.addEventListener("click", () => {
     void exportAllFilteredTicketsToCsv();
   });

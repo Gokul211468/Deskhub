@@ -67,11 +67,7 @@ function trimOldestToasts(host, maxBeforeAdd) {
   }
 }
 
-/**
- * @param {string} message
- * @param {"info"|"success"|"error"|"warning"} [type]
- * @param {{ duration?: number }} [opts] — duration in ms (default 3000)
- */
+
 export function showToast(message, type = "info", opts = {}) {
   const variant = TOAST_TYPES.has(type) ? type : "info";
   const duration =
@@ -119,9 +115,7 @@ function teardownModal(result) {
   previousActiveElement = null;
 }
 
-/**
- * @param {*} [result] — passed to the promise returned by openModal
- */
+
 export function closeModal(result) {
   if (!modalBackdrop || modalIsClosing) return;
 
@@ -162,11 +156,7 @@ function forceCloseModalNoAnimation() {
   previousActiveElement = null;
 }
 
-/**
- * @param {HTMLElement|string} content
- * @param {{ title?: string }} [options]
- * @returns {Promise<*>}
- */
+
 export function openModal(content, options = {}) {
   if (modalBackdrop) {
     forceCloseModalNoAnimation();
@@ -321,16 +311,12 @@ function ensureLoaderElement(message) {
   return root;
 }
 
-/**
- * Full-screen loader for slow network/API work. Nesting-safe (ref count).
- * @param {string} [message] — shown under spinner (first call wins until fully hidden)
- */
 export function showLoader(message = "") {
   loaderDepth += 1;
   ensureLoaderElement(message);
 }
 
-/** Pair with showLoader; removes overlay when outermost showLoader is balanced. */
+
 export function hideLoader() {
   loaderDepth = Math.max(0, loaderDepth - 1);
   if (loaderDepth > 0) return;
